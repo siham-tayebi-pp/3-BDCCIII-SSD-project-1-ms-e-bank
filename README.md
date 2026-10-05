@@ -300,10 +300,250 @@ spring.cloud.config.discovery.enabled=false
 et on descative auss noter config sinn il va chercher un servcie de config centralise 
 e donc snotre config
 spring.application.name=customer-service
+spring.application.name=customer-service
 server.port=8056
 spring.cloud.config.discovery.enabled=false
 spring.cloud.config.enabled=false
+eureka.client.enabled=false
 spring.datasource.url=jdbc:h2:mem:customers-db
-
+spring.h2.console.enabled=true
 
 on demarre notre app
+http://localhost:8056/customers
+
+![img_7.png](images/img_7.png)
+et vpila donc tt nos customers 
+on va au bd ss url :
+http://localhost:8056/h2-console
+
+e voila ca faiche tt nos cyustomers 
+ ![img_8.png](images/img_8.png)
+
+puis pon ajoute notre documentation swagger:
+<dependency>
+<groupId>org.springdoc</groupId>
+<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+<version>3.1.1</version>
+</dependency>
+et voila notre dweb api 
+![img_9.png](images/img_9.png)
+http://localhost:8056/swagger-ui/index.html
+on etst les donc
+GET
+/customers
+![img_10.png](images/img_10.png)
+
+
+POST
+/customers
+
+![img_11.png](images/img_11.png)
+
+GET
+/customers/{id}
+![img_12.png](images/img_12.png)
+onn pase a creer notre ebank service:
+avec el meme dependencies que custoemr service
+![img_13.png](images/img_13.png)
+et on jaoute aussie
+entities
+└── BankAccount
+
+repositories
+└── BankAccountRepository
+
+services
+└── BankAccountService
+
+controllers
+└── BankAccountController
+model
+|____ Customer
+
+
+
+
+package net.tayebi.ebankservice.services;
+
+import net.tayebi.ebankservice.entities.BankAccount;
+import net.tayebi.ebankservice.repositories.BankAccountRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class BankAccountService {
+private BankAccountRepository accountRepository;
+
+    public BankAccountService(BankAccountRepository accountRepository){
+        this.accountRepository = accountRepository;
+    }
+    public List<BankAccount> getAllBankAccounts(){
+        return accountRepository.findAll();
+    }
+
+    public BankAccount getBankAccountById(String id){
+            return accountRepository.findById(id)
+                    .orElseThrow(()->new RuntimeException("Account not found"));
+    }
+
+    public BankAccount save(BankAccount bankAccount){
+                return accountRepository.save(bankAccount);
+    }
+}
+
+
+package net.tayebi.ebankservice.controllers;
+
+import net.tayebi.ebankservice.entities.BankAccount;
+import net.tayebi.ebankservice.repositories.BankAccountRepository;
+import net.tayebi.ebankservice.services.BankAccountService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+public class BankAccountController {
+@Autowired
+private BankAccountService bankAccountService;
+
+    @GetMapping("/accounts")
+    public List<BankAccount> getAllBankAccounts(){
+        return bankAccountService.getAllBankAccounts();
+    }
+
+    @GetMapping("/accounts/{id}")
+    public BankAccount getBankAccountById(@PathVariable String id){
+        return bankAccountService.getBankAccountById(id);
+    }
+
+    @PostMapping("/accounts")
+    public BankAccount save(@RequestBody  BankAccount bankAccount){
+        return bankAccountService.save(bankAccount);
+    }
+
+}
+
+
+package net.tayebi.ebankservice.entities;
+
+import jakarta.persistence.Id;
+import jakarta.persistence.Transient;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import net.tayebi.ebankservice.model.Customer;
+
+import java.util.Date;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class BankAccount {
+@Id
+private String id;
+private Date createdAt;
+private double balance;
+private String type;
+private long customerId;
+@Transient
+private Customer customer;
+}
+
+
+package net.tayebi.ebankservice.model;
+
+import lombok.*;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Customer {
+private Long id;
+private String name;
+private String email;
+}
+
+
+package net.tayebi.ebankservice.repositories;
+
+import net.tayebi.ebankservice.entities.BankAccount;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface BankAccountRepository extends JpaRepository<BankAccount, String> {
+
+    List<BankAccount> findByCustomerId(Long id);
+}
+
+on pase dan sbean a se service pour cree rdes acounts
+
+package net.tayebi.ebankservice;
+
+import net.tayebi.ebankservice.entities.BankAccount;
+import net.tayebi.ebankservice.repositories.BankAccountRepository;
+import net.tayebi.ebankservice.services.BankAccountService;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+
+@SpringBootApplication
+public class EbankServiceApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(EbankServiceApplication.class, args);
+	}
+
+	@Bean
+	CommandLineRunner init(BankAccountService bankAccountService) {
+		return args -> {
+			for (int i = 1; i <= 3; i++) {
+				for (int j = 0; j <5 ; j++) {
+					bankAccountService.save(
+							BankAccount.builder()
+							. type (Math.random()>0.5? "CURRENT-ACCOUNT": "SAVING_ACCOUNT")
+									.balance(1000+ Math.random()*60000)
+									.customerId(i)
+									.build());
+				}
+		};
+
+	}
+
+}
+
+on pase au config de cet app ou de c microservice
+
+
+spring.application.name=ebank-service
+server.port=8057
+eureka.client.enabled=false
+spring.cloud.config.enabled=false
+spring.cloud.discovery.enabled=false
+spring.h2.console.enabled=true
+on execute le donc
+on tetste
+
+avnmat on ajoute aussi de swagger
+<dependency>
+<groupId>org.springdoc</groupId>
+<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+<version>3.1.1</version>
+</dependency>
+![img_14.png](images/img_14.png)
+o ntets notre api domcn 
+test gde get all 
+![img_15.png](images/img_15.png)
+
+get by id 
+![img_16.png](images/img_16.png)
+
+on passe a creer notre gaway service: avc depnednecies:
+reactive gateway, discovery clin, actuiator
