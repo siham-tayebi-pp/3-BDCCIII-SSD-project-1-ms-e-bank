@@ -781,7 +781,6 @@ et erueka dsicoveru client et config client pusi actuator
 ![img_29.png](images/img_29.png)
 
 spring.application.name=ebank-bot
-spring.ai.openai.api-key=....
 spring.ai.openai.chat.options.model=gpt-4o
 spring.cloud.discovery.enabled=true
 spring.cloud.config.enabled=false
