@@ -774,6 +774,363 @@ on le realumeet a macreh
 ![img_28.png](images/img_28.png)
 PARTIE 2:ON PASSE A LA CREATION DU CHATBOT  AVEC MCP
 
-PARIE3;ET FROBTEND ANGULAR AVC CLIENT TLEGRAM
 
-APRES SECURITE AVEC KEKLCOCK ETC
+on apsse creer chatbot -srvice ou ebank-bot avec dependansces : web , openai comme llm,
+ou ollama ou gmeini ms on utlsie que openai maitnnent
+et erueka dsicoveru client et config client pusi actuator
+![img_29.png](images/img_29.png)
+
+spring.application.name=ebank-bot
+spring.ai.openai.api-key=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
+spring.ai.openai.chat.options.model=gpt-4o
+spring.cloud.discovery.enabled=true
+spring.cloud.config.enabled=false
+
+pour comminuqe avec openai on aura besoin de cle open ai api key
+
+
+
+
+
+
+on cree contorlelr et chabot controller et on le memet:
+
+server.port=8088
+
+[//]: # (PARIE3;ET FROBTEND ANGULAR AVC CLIENT TLEGRAM)
+
+[//]: # (APRES SECURITE AVEC KEKLCOCK ETC)
+on intnene dependnency swagger
+
+et voila on fait req dna surl c quoi amrakech ca repond
+http://localhost:8088/chat?query=c%27quoi%20marakech
+![img_30.png](images/img_30.png)
+test de  cet:http://localhost:8088/swagger-ui/index.html#/ebank-chatbot-controller/chat  
+GET
+/chat
+![img_31.png](images/img_31.png)
+
+
+ca me repodn  jai ditt bonjour eeil dit bnoju comemen je peux taidr docn c bon on teste comem on siat il sotn stateless cad aps de memeory je leui dit me nom et je lui ask apres pour svaoir suil le reppale
+![img_32.png](images/img_32.png)
+il dit quil ne me coananit pas ca rya pas de memepir
+![img_33.png](images/img_33.png)
+et c ca ce quon va fiare en injectnat chat memory
+public EbankChatbotController(ChatClient.Builder chatClient, ChatMemory chatMemory) {
+this.chatClient = chatClient
+.defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
+.build();
+} la on a consturit eganet avec mmeoire pour gerder les reponse e qst en memeoire pour meoriser 
+e n esyae lde lui dire je suis siham et apres c quoi on nom
+
+![img_34.png](images/img_34.png)
+op pase au reel ca c juste test on cree ebank agent:
+![img_35.png](images/img_35.png)
+
+package net.tayebi.ebankbot.controllers;
+
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@Service
+public class EbankAIAgent {
+
+    private ChatClient chatClient;
+
+    public EbankAIAgent(ChatClient.Builder chatClient, ChatMemory chatMemory) {
+        this.chatClient = chatClient
+                .defaultAdvisors(
+                        MessageChatMemoryAdvisor.builder(chatMemory).build()
+                )
+                .build();
+    }
+
+    public String chat( String query) {
+
+        return chatClient
+                .prompt()
+                .user(query)
+                .advisors(a -> a.param(
+                        ChatMemory.CONVERSATION_ID,
+                        "user-1"
+                ))
+                .call()
+                .content();
+    }
+}
+package net.tayebi.ebankbot.controllers;
+
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@AllArgsConstructor
+public class EbankChatbotController {
+
+    private EbankAIAgent ebankAIAgent;
+
+
+    @GetMapping("/chat")
+    public String chat(
+            @RequestParam(name = "query", defaultValue = "Bonjour") String query) {
+
+        return ebankAIAgent.chat(query);
+    }
+
+
+}
+![img_36.png](images/img_36.png) mais il en conanit pas mes donnes de lapp pour le moemn
+on passe a utilsier lmcp pour exposer microservcie via mvcp
+dans customer svcie on veux uajouter dpennednace mcp serve
+
+et dona csutomer servcie on met mcp tool :
+
+package net.tayebi.customerservice.services;
+
+
+import net.tayebi.customerservice.entities.Customer;
+import net.tayebi.customerservice.repositories.CustomerRepository;
+import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class CustomerService {
+private CustomerRepository customerRepository;
+
+    public CustomerService(CustomerRepository customerRepository) {
+        this.customerRepository = customerRepository;
+    }
+    @McpTool(description = "Get All customers")
+    public List<Customer> getAllCustomers(){
+            return customerRepository.findAll();
+    }
+
+    @McpTool(description = "Find Customer By id")
+    public Customer findCustomerById(@McpToolParam(description = "The customer id") Long id){
+                return customerRepository.findById(id)
+                        .orElseThrow(()->new RuntimeException(String.format("Customer with id %s not found", id)));
+    }
+
+    @McpTool(description = "Save Customer")
+    public  Customer createCustomer(@McpToolParam(description = "The customer to save(name,email)") Customer customer){
+        return customerRepository.save(customer);
+    }
+}
+
+donc ces meth la sont accessible vvia mcp cad nimporte quelle agent qui connait ladress de ce sevrice peut utilsier dces tools
+on va  au config de ce servcie et on met protocol stremable acar il eprmemt de fiare com bidirec entre agent et tools
+spring.ai.mcp.server.protocol=streamable
+
+si on a client mcp ca peut se connecter auto avce ce servcie la comem postman ou inspector mcp
+on tst avec inspector
+ca c client mcp
+npx run @modelcontextprotocol/inspector
+
+ou bein on test avec postman meiux
+ms on va le tester apres
+on reveint vers chatbot poru csbpoi comemnt il va lutiser ce serve rmcp
+dna sebnak bot on jaoute mcp cleint
+puis on config
+spring.ai.mcp.client.streamable-http.connections.customer.url=http://localhost:8065/mcp
+ 
+car par defgaut c depose dna snedpoitn /mcp
+aon dit anotre agent de cherge tools au demarrage en injecttan tollclaback provider dna scisntruceur
+on demande donc dans notre endpoitns liste de lxitns etvila c affiche avec cee qst Bonjour u me donne la liste des clients
+![img_37.png](images/img_37.png)
+stp tu me donne les details du client 2 ca donne details 
+![img_38.png](images/img_38.png)
+
+si on met  
+ca repond mais nous ondoit  limmiter le champs dacitivte
+![img_39.png](images/img_39.png)
+on ajoute ca pour delimieter le champs dactivite
+.defaultSystem("Vous un assistant qui se charge de répondre aux question" +
+" de l'utilisateur en fonction du contexte fourni ,si aucun contexte " +
+"n'est fourni, répond avec JE NE SAIS PAS"
+)
+voila la il repodn avc je ne sais pas sur je veux amnger
+![img_40.png](images/img_40.png)
+liste de sclients ca repond:
+![img_41.png](images/img_41.png)
+
+on rfait meme chsoe pour accounts
+<dependency>
+<groupId>org.springframework.ai</groupId>
+<artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
+</dependency>
+on passe a mettre not annotation tools ou bein definri nos tools
+dan sprroop ebankserbvice :
+spring.ai.mcp.server.protocol=streamable
+
+pusi modif dna ssevice
+package net.tayebi.ebankservice.services;
+
+import lombok.AllArgsConstructor;
+import net.tayebi.ebankservice.entities.BankAccount;
+import net.tayebi.ebankservice.feign.CustomerRestClient;
+import net.tayebi.ebankservice.model.Customer;
+import net.tayebi.ebankservice.repositories.BankAccountRepository;
+import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@AllArgsConstructor
+
+public class BankAccountService {
+
+    private BankAccountRepository accountRepository;
+    private CustomerRestClient customerRestClient;
+
+    @McpTool(description = "Get All Bank accounts")
+    public List<BankAccount> getAllBankAccounts(){
+        return accountRepository.findAll();
+    }
+
+    @McpTool(description = "Find Account By Id")
+    public BankAccount getBankAccountById(@McpToolParam(description = "The account id") String id){
+            BankAccount bankAccount= accountRepository.findById(id)
+                    .orElseThrow(()->new RuntimeException("Account not found"));
+            bankAccount.setCustomer(customerRestClient.getCustomer(bankAccount.getCustomerId()));
+        return bankAccount;
+    }
+
+    @McpTool(description = "Save new account")
+    public BankAccount save(@McpToolParam(description = "The bank account to save(balance, type, customerId)") BankAccount bankAccount){
+        try {
+            Customer customer = customerRestClient.getCustomer(bankAccount.getCustomerId());
+            bankAccount.setId(UUID.randomUUID().toString());
+            bankAccount.setCreatedAt(new Date());
+            return accountRepository.save(bankAccount);
+            
+        } catch (RuntimeException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+}
+
+
+et ob va  anotre chatbo et on va ajouter autre ligne pourr lautre mcp serve
+on va donc a notre benas sevcie pour ajouter leaute mcp servev
+spring.ai.mcp.client.streamable-http.connections.ebank.url=http://localhost:8057/mcp
+ on c a tter dna snotre web sevrice
+on dmemnad liste des cmptres
+:
+![img_42.png](images/img_42.png)
+
+liste des comptes des clients dont id 1
+![img_43.png](images/img_43.png)
+
+
+affiche ss forme tab:
+![img_44.png](images/img_44.png)
+
+ajouter un nv compte avec infos: ajoute un compte avec type : saving_account,balance:8000, et cusotmerId:2
+![img_45.png](images/img_45.png)
+et voila c bien ajoute avec succes
+![img_46.png](images/img_46.png)
+on etster depusi la gateway  http://localhost:9999/EBANK-BOT/chat?query=liste%20des%20comptes
+![img_47.png](images/img_47.png)
+
+mais reposne comem html ca doit etre affiche stuructue pour se faire on emt
+@GetMapping(value = "/chat", produces = MediaType.TEXT_PLAIN_VALUE)
+c bon laffiche maintnen ....
+http://localhost:9999/EBANK-BOT/chat?query=liste%20des%20comptes
+![img_48.png](images/img_48.png)
+
+lsite client  http://localhost:9999/EBANK-BOT/chat?query=liste%20des%20clients
+![img_49.png](images/img_49.png)
+
+pour les app clients
+maintennt on va ezsyae de pemmetre de communique  avec client telegram et cleint dispcord
+cad communiuqe avec mon bot vai app tlegram ou dicscord 
+pour se fiare on ajoute un dependances
+<dependency>
+<groupId>org.telegram</groupId>
+<artifactId>telegrambots-spring-boot-starter</artifactId>
+<version>6.9.7.1</version>
+</dependency>
+
+<dependency>
+<groupId>com.zgamelogic</groupId>
+<artifactId>spring-boot-starter-discord</artifactId>
+<version>5.0.4</version>
+</dependency>
+
+telegrma cree prob avec ureka c pour cle aonntaville discord et apres tlegram
+on cree discord puis DiscordBot
+meth perodfm est invoque a chaue foit cleint discord envoie msg
+si bot lui meme on traite pas msg ms sinn on traite pour eviter de triater nbcp de msg qui neveint qps de cleint discord
+
+package net.tayebi.ebankbot.discord;
+
+import com.zgamelogic.discord.annotations.DiscordMapping;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.tayebi.ebankbot.controllers.EbankAIAgent;
+
+public class DiscordBot {
+private EbankAIAgent ebankAIAgent;
+@DiscordMapping
+private void perform(MessageReceivedEvent event){
+System.out.println(event);
+if (event.getAuthor().isBot()) return;
+String query = event.getMessage().getContentRaw();
+String response = ebankAIAgent.chat(query);
+event.getChannel().sendMessage(response).queue();
+}
+}
+
+mais pour que ca marhc eil nous fau un token
+
+je genre pusi je copie adres
+https://discord.com/oauth2/authorize?client_id=1556820640508678228
+![img_50.png](images/img_50.png) je lajoyte au server
+psui je cree mon server
+![img_51.png](images/img_51.png)
+et voila donc
+
+
+
+et pour elgram  avc tlgram bot
+
+
+
+pour eviter prb cnflit ntre tlegrma e teurkea
+eurekpipa.client.jersey.enabled=false
+on ajoite notre frontend angula
+
+
+
+
+Partie3: Frontend angular
+on cree le pr[ojet
+![img_52.png](images/img_52.png)]
+'on install bootstrap'
+![img_53.png](images/img_53.png)
+on isnall botstrap icons
+![img_54.png](images/img_54.png)
+on fiat ... via bnpm install:
+![img_55.png](images/img_55.png)
+
+puis on importe boostap et boo.incosn
+/* You can add global styles to this file, and also import other style files */
+@import "bootstrap/dist/css/bootstrap.min.css";
+@import "bootstrap-icons/font/bootstrap-icons.min.css";
+
