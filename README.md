@@ -1618,3 +1618,54 @@ et poru fiare ce stareming ob va a ebank bo pour ajouter une nouvelel endpoints
 /chat stream 
 
 et au liu de rrn sr on retrn u
+on ajoute dan sca dans agnet
+public Flux<String> chatStream(String query) {
+
+        return chatClient
+                .prompt()
+                .user(query)
+                .advisors(a -> a.param(
+                        ChatMemory.CONVERSATION_ID,
+                        "user-1"
+                ))
+                .stream()
+                .content();
+    }
+et ca dna controlllr
+@GetMapping(value = "/chat-streaming", produces = MediaType.TEXT_PLAIN_VALUE)
+public Flux<String> chatStreaming(
+@RequestParam(name = "query", defaultValue = "Bonjour") String query) {
+
+        return ebankAIAgent.chatStream(query);
+    }
+on rdmmar le bot
+et voial nos 
+comptes safiicheront en mode streaming
+![img_85.png](images/img_85.png)
+![img_86.png](images/img_86.png)
+nmais nmaianntnen comem faire se strmnin dan snagular et pour se fiare on devra cree rla partie bot
+ une meth askagent stream avec pipe cad une fois evet arrive on utilsie map 
+
+et voial celel ci eprmet de askAgentStream(){
+this.response$ =this.http.get("http://localhost:9999/EBANK-BOT/chat-streaming?query="+this.query,
+{responseType:'text', observe:'events'}
+).pipe(map(event=>{
+switch (event.type){
+case HttpEventType.Sent:
+return {'type': 'Sent'}
+case HttpEventType.DownloadProgress:
+return {'type': 'Response' , content:(event as HttpDownloadProgressEvent).partialText}
+case HttpEventType.Response:
+return {'type': 'Response' , content: event.body}
+default:
+return {'type':'Other', data:event};
+}
+}));
+
+}  ........ 
+et dan ahtml on appel sask sgaent strema
+<button (click)="askAgentStream()" class="btn btn-primary" style="display: inline">
+
+on test donc
+boila ca marhc een streaming dans repsosne safifche en temps reel
+![img_87.png](images/img_87.png)

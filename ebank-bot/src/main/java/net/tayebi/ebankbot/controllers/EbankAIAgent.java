@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Flux;
 
 @Service
 public class EbankAIAgent {
@@ -53,6 +54,18 @@ public class EbankAIAgent {
                         "user-1"
                 ))
                 .call()
+                .content();
+    }
+    public Flux<String> chatStream(String query) {
+
+        return chatClient
+                .prompt()
+                .user(query)
+                .advisors(a -> a.param(
+                        ChatMemory.CONVERSATION_ID,
+                        "user-1"
+                ))
+                .stream()
                 .content();
     }
 }
