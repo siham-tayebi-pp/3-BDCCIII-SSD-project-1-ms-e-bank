@@ -15,7 +15,7 @@ import {LoadingService} from '../services/loading';
 })
 export class Accounts {
   private http=inject(HttpClient);
-  private loadingService=inject(LoadingService);
+  protected loadingService=inject(LoadingService);
   accounts$:Observable<AccountListState> = this.http.get<Account[]>
   ('http://localhost:9999/EBANK-SERVICE/accounts')
     .pipe(map(resp => {

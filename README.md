@@ -1428,6 +1428,17 @@ loading.setLoading(false);
 }));
 la nous avons un ienntnceptor aui ait ce travilel eun fpois pour tt lapp
 on lject dans note app
+et pusi on ajoute le spinner dans notre div pour le loading des donnes
+je coorige ca en publi car proteced ne me prmemt pas de lappelr
+public isLoading = this.loading.asReadonly();
+
+pusi on ajoute ca a notre html
+
+    @if (loadingService.isLoading()) {
+      <div class="spinner-border text-primary" role="status">
+<span class="visually-hidden">Loading ...</span>
+</div>
+}
 ![img_67.png](images/img_67.png)
 ![img_68.png](images/img_68.png)
 ![img_69.png](images/img_69.png)
