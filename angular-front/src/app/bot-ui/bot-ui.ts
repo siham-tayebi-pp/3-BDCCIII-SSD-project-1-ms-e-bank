@@ -29,7 +29,7 @@ export class BotUi {
   }
   askAgentStream(){
     this.response$ =this.http.get("http://localhost:9999/EBANK-BOT/chat-streaming?query="+this.query,
-      {responseType:'text', observe:'events'}
+      {responseType:'text', observe:'events', reportProgress:true}
     ).pipe(map(event=>{
       switch (event.type){
         case HttpEventType.Sent:

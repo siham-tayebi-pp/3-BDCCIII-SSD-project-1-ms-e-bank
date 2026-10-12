@@ -1668,4 +1668,18 @@ et dan ahtml on appel sask sgaent strema
 
 on test donc
 boila ca marhc een streaming dans repsosne safifche en temps reel
+
 ![img_87.png](images/img_87.png)
+on met ca dnc
+@if( resp.type == 'Respponse'){
+<markdown [data]="resp.content">
+
+          </markdown>
+        } et on met ca dans .ts [oiur ....
+      {responseType:'text', observe:'events', reportProgress:true}
+
+on passe pour tester 
+t pvoiala sca safiche en mode stremaing
+![img_88.png](images/img_88.png)
+on etsre avec liste des comptes bancaires ss forme de tableau avec bordure et c bon cs afahcie tab en streaming
+![img_89.png](images/img_89.png)

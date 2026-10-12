@@ -16,13 +16,17 @@
     }
   </div>
   <div class="card-body">
-      @if( response$ | async ; as botResponse){
-        <markdown [data]="botResponse">
+      @if( response$ | async ; as resp){
+        @if( resp.type == 'Response'){
+          <markdown [data]="resp.content">
 
-        </markdown>
+          </markdown>
+        }
+
 
       }
   </div>
 
 </div>
+
 
