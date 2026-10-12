@@ -1439,8 +1439,12 @@ pusi on ajoute ca a notre html
 <span class="visually-hidden">Loading ...</span>
 </div>
 }
+
+on ajoute notre intercepor dna config .ts pour que notre intecceptor marche bin et on essayge de mette en mode de network 3g ou 4g slow t voial on voit notre spinner en bleu
+
 ![img_67.png](images/img_67.png)
 ![img_68.png](images/img_68.png)
+on passe aintegrer notre bot on lajoute dna route donc
 ![img_69.png](images/img_69.png)
 ![img_70.png](images/img_70.png)
 
