@@ -1492,3 +1492,127 @@ query:any
 }
 pusi on fiat un binding  viangmodel dans botui 
 apre son va faire le streaming mais pas poru el koement
+
+ici je revevrifie mon bot sil amrhce je demnacde lsite de scomptes et c tres bien il le sfaich
+via url http://localhost:9999/EBANK-BOT/chat?query=donne%20moi%20la%20liste%20des%20comptes%20bancaires
+![img_72.png](images/img_72.png)
+odn pn jeour http cleint dans nore bot compemenn 
+et on ajoyte ausis http client dna s notre app,conig
+ocmme ca
+import {Component, inject} from '@angular/core';
+import {FormsModule} from '@angular/forms';
+import {HttpClient} from '@angular/common/http';
+
+@Component({
+selector: 'app-bot-ui',
+imports: [
+FormsModule
+],
+templateUrl: './bot-ui.html',
+styleUrl: './bot-ui.css',
+})
+export class BotUi {
+query:any;
+http: HttpClient=inject(HttpClient);
+askAgent: any;
+}
+
+![img_73.png](images/img_73.png)
+mais pour cete versuon c pas la peine djaoute http client dna config c par defaut dna sversion 21
+on revient au bot en declare donc un responde ss forme dun pobservable on at res de string mais on mt any avec poit exclammanton pour ne pas linit 
+
+on linti dna s askagent
+
+onm a mit ca donc
+import {Component, inject} from '@angular/core';
+import {FormsModule} from '@angular/forms';
+import {HttpClient} from '@angular/common/http';
+import {Observable} from 'rxjs';
+
+@Component({
+selector: 'app-bot-ui',
+imports: [
+FormsModule
+],
+templateUrl: './bot-ui.html',
+styleUrl: './bot-ui.css',
+})
+export class BotUi {
+query:any;
+http: HttpClient=inject(HttpClient);
+response$!:Observable<any>;
+askAgent(){
+this.response$ =this.http.get("http://localhost:9999/EBANK-BOT/chat?query="+this.query);
+
+}
+}
+
+et dna page html dna sune vdi on afiche la rpeonsea
+  <div class="card-body">
+      @if( response$ | async ; as botResponse){
+        {{botResponse}}
+      }
+  </div>
+on tetst et on voi dna srpeosnse
+
+et voial donc la liste des comptes dna reposnes
+![img_74.png](images/img_74.png)
+maintnne on veut que aund onvoie kal rq hhtp cleint doit supoer que res c text 
+
+this.response$ =this.http.get("http://localhost:9999/EBANK-BOT/chat?query="+this.query,
+{responseType:'text'}
+);
+
+maintne s on tappe quey ca va laffiche dna la page meme pas la epine daller daun sdev yools pour vpoir reposnse
+![img_75.png](images/img_75.png)
+mais ca c mark down don nosu an va intaller la depnnsdna e markdown
+npm  i ngx-markdown
+
+
+
+et dna  config on ejoute provide markdown
+![img_76.png](images/img_76.png)
+![img_77.png](images/img_77.png)
+e on le met dna html de componene bot
+<markdown [data]="botResponse">
+
+        </markdown>
+et on tets donc e on demnande le Donne moi la Liste des comptes bancaires
+![img_78.png](images/img_78.png)
+puis Donne moi la Liste des clints:
+
+et ca marhce tres bein
+![img_79.png](images/img_79.png)
+et on demnade aussi:
+Donne moi la Liste des comptes bancaire   sous forme d'un tableau
+![img_80.png](images/img_80.png)
+
+Donne moi la Liste des comptes bancaire  du client Imane sous forme d'un tableau 
+![img_81.png](images/img_81.png)
+ on veut ajouter  Ajoute un compte bancaire avec balance=3400 de type current account et pour customer c siham
+c bon ca ajoute trss ben
+![img_82.png](images/img_82.png)
+
+pour veriife on afifche tt les cmopte de siham pour voir si c ajoute
+t voial le voit bein icic L:Donne moi la Liste des comptes bancaire de siham sous forme de tableau
+![img_83.png](images/img_83.png)
+
+
+la on passe a ajouter ausi el spinenr en cours poru que si rep n pas envore prete comme e cas de accounts avnt
+@if (loadingService.isLoading()) {
+<div class="spinner-border text-primary" role="status">
+<span class="visually-hidden">Loading ...</span>
+</div>
+}mais on  ij etcte donc service dna s note bot .ts
+
+loadingService= inject(LoadingService);
+on test e voila ca ffiche spinner en attndant la rpe :
+
+![img_84.png](images/img_84.png)
+
+
+
+mainnne si on fai un chabot donc on aura besoin du stream,ing cad une fois un chsoe arrive on lafifice et pas attndre jusque le tt arrive
+
+et poru fiare ce stareming ob va a ebank bo pour ajouter une nouvelel endpoints 
+/chat stream 

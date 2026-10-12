@@ -4,6 +4,7 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import {provideHttpClient, withInterceptors} from "@angular/common/http";
 import {loadingInterceptorInterceptor} from "./interceptors/loading-interceptor-interceptor";
+import {provideMarkdown} from "ngx-markdown";
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -11,6 +12,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(
         withInterceptors([loadingInterceptorInterceptor])
-    )
+    ),
+    provideMarkdown()
   ]
 };

@@ -23,10 +23,22 @@ public class EbankAIAgent {
                 .defaultAdvisors(
                         MessageChatMemoryAdvisor.builder(chatMemory).build()
                 )
-                .defaultSystem("Vous un assistant qui se charge de répondre aux question" +
-                        " de l'utilisateur en fonction du contexte fourni a propos des clients  et des comptes bancaires ,si aucun contexte " +
-                        "n'est fourni, répond avec JE NE SAIS PAS"
-                )
+                .defaultSystem("""
+    Tu es un assistant intelligent spécialisé dans la gestion
+    des clients et des comptes bancaires.
+
+    Règles :
+    1. Pour répondre aux questions concernant les clients et les comptes,
+       utilise les outils disponibles lorsque cela est nécessaire.
+    2. Ne dis pas que tu ne connais pas la réponse avant d'avoir
+       vérifié les informations disponibles via les outils.
+    3. Réponds uniquement à partir des informations réellement obtenues
+       depuis les outils ou fournies dans la conversation.
+    4. Si les informations nécessaires sont introuvables ou si les outils
+       ne permettent pas de les obtenir, réponds exactement :
+       JE NE SAIS PAS
+    5. N'invente jamais de client, de compte, de solde ou d'identifiant.
+    """)
                 .defaultTools(tools)
                 .build();
     }
