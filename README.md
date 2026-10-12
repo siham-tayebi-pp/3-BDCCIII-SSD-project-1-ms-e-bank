@@ -1476,3 +1476,19 @@ on passe amodifier le html de note comopenen bot-ui
 
 pour ....
 ![img_71.png](images/img_71.png) et voila cdon 
+on dec;are query dans notre botui ts:
+de type any
+
+import { Component } from '@angular/core';
+
+@Component({
+selector: 'app-bot-ui',
+imports: [],
+templateUrl: './bot-ui.html',
+styleUrl: './bot-ui.css',
+})
+export class BotUi {
+query:any
+}
+pusi on fiat un binding  viangmodel dans botui 
+apre son va faire le streaming mais pas poru el koement
