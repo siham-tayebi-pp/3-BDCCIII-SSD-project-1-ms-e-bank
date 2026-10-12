@@ -23,4 +23,10 @@ public class EbankChatbotController {
 
         return ebankAIAgent.chat(query);
     }
+    @GetMapping(value = "/chat-streaming", produces = MediaType.TEXT_PLAIN_VALUE)
+    public String chatStreaming(
+            @RequestParam(name = "query", defaultValue = "Bonjour") String query) {
+
+        return ebankAIAgent.chat(query);
+    }
 }

@@ -1374,7 +1374,7 @@ on essaye dinvener un err de endputns <div class="text-danger">
 ey voila on met pare xple endoui errone
   ('http://localhost:9999/EBANK-SERVICE/act')
 voila not found affiche dna sbrqoeswe on corirge donc notre endpouitns 
-
+a
 ![img_65.png](images/img_65.png)
 on paasse a affiche in porgress que pour que si req est in prgress
 et pour se fiar eou doit linterpreste via un intercepteur
@@ -1616,3 +1616,5 @@ mainnne si on fai un chabot donc on aura besoin du stream,ing cad une fois un ch
 
 et poru fiare ce stareming ob va a ebank bo pour ajouter une nouvelel endpoints 
 /chat stream 
+
+et au liu de rrn sr on retrn u
