@@ -1445,7 +1445,34 @@ on ajoute notre intercepor dna config .ts pour que notre intecceptor marche bin 
 ![img_67.png](images/img_67.png)
 ![img_68.png](images/img_68.png)
 on passe aintegrer notre bot on lajoute dna route donc
+
+{path: "bot", component: BotUi},
+
+
+ 
+et on jaoute nore cmponennrt pusi on lajoute dans navbar de app 
+ <li class="nav-item">
+              <a class="nav-link" routerLink="/bot">ChatBot</a>
+          </li>
+
 ![img_69.png](images/img_69.png)
+et voila notre bot
+ajoute dna s la page 
 ![img_70.png](images/img_70.png)
+on passe amodifier le html de note comopenen bot-ui
 
 
+
+<div class="p-3">
+
+  <div class="card-body">
+    <input type="text" class="form-control m-2" style="display: inline; width: 80%">
+    <button class="btn btn-primary" style="display: inline">
+      <i class="bi bi-search"></i>
+    </button>
+  </div>
+
+</div>
+
+pour ....
+![img_71.png](images/img_71.png) et voila cdon 
