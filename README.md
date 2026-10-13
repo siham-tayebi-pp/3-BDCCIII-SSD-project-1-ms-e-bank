@@ -942,7 +942,7 @@ ms on va le tester apres
 on reveint vers chatbot poru csbpoi comemnt il va lutiser ce serve rmcp
 dna sebnak bot on jaoute mcp cleint
 puis on config
-spring.ai.mcp.client.streamable-http.connections.customer.url=http://localhost:8065/mcp
+spring.ai.mcp.client.streamable-http.connections.customer.url=http://localhost:8056/mcp
  
 car par defgaut c depose dna snedpoitn /mcp
 aon dit anotre agent de cherge tools au demarrage en injecttan tollclaback provider dna scisntruceur
@@ -1076,6 +1076,108 @@ pour se fiare on ajoute un dependances
 telegrma cree prob avec ureka c pour cle aonntaville discord et apres tlegram
 on cree discord puis DiscordBot
 meth perodfm est invoque a chaue foit cleint discord envoie msg
+donc la on creer dans bot father unotre app et la on a donc le nom et lapi key de lapp
+![img_70.jpeg](images/img_70.jpeg)
+on a donc mis note code
+package net.tayebi.ebankbot.telegram;
+
+import net.tayebi.ebankbot.controllers.EbankAIAgent;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.TelegramBotsApi;
+import org.telegram.telegrambots.meta.api.methods.ActionType;
+import org.telegram.telegrambots.meta.api.methods.send.SendChatAction;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
+
+import jakarta.annotation.PostConstruct;
+
+@Component
+public class TelegramBot extends TelegramLongPollingBot {
+//TOken
+@Value("${telegram.token}")
+private String telegramBotToken;
+
+    private final EbankAIAgent aiAgent;
+
+    public TelegramBot(@Value("${telegram.token}") String telegramBotToken, EbankAIAgent aiAgent) {
+        super(telegramBotToken);
+        this.telegramBotToken = telegramBotToken;
+        this.aiAgent = aiAgent;
+    }
+
+    @Override
+    public String getBotUsername() {
+        return "e_bank_project1_bot";
+    }
+
+    @PostConstruct
+    public void registerTelegramBot() {
+        try {
+            TelegramBotsApi api = new TelegramBotsApi(DefaultBotSession.class);
+            api.registerBot(this);
+        } catch (TelegramApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    @Override
+    public void onUpdateReceived(Update update) {
+        try {
+            if (!update.hasMessage() || !update.getMessage().hasText()) return;
+
+            String messageText = update.getMessage().getText();
+            Long chatId = update.getMessage().getChatId();
+
+            sendTyping(chatId);
+
+            String answer = aiAgent.chat(messageText);
+
+            sendText(chatId, answer);
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void sendTyping(Long chatId) {
+        SendChatAction action = new SendChatAction();
+        action.setChatId(chatId.toString());
+        action.setAction(ActionType.TYPING);
+        try {
+            execute(action);
+        } catch (TelegramApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void sendText(Long chatId, String text) {
+        SendMessage message = new SendMessage();
+        message.setChatId(chatId.toString());
+        message.setText(text);
+        try {
+            execute(message);
+        } catch (TelegramApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+
+et voila on passe a etse note chat telgrma
+et voila on lui dmande bjr il dit jsne sias pas
+puis liste de sclint il lafifhce t 
+![img_69.jpeg](images/img_69.jpeg)
+et voila miaanntnon lui dmmande liste de comptes banciasr
+![img_68.jpeg](images/img_68.jpeg)
+donc notre clint telgram marhc etres bien
+
+
 si bot lui meme on traite pas msg ms sinn on traite pour eviter de triater nbcp de msg qui neveint qps de cleint discord
 
 package net.tayebi.ebankbot.discord;
@@ -1096,6 +1198,9 @@ event.getChannel().sendMessage(response).queue();
 }
 }
 
+voila nor bot discord 
+la on essyae creer un 
+
 mais pour que ca marhc eil nous fau un token
 
 je genre pusi je copie adres
@@ -1104,9 +1209,40 @@ https://discord.com/oauth2/authorize?client_id=1556820640508678228
 psui je cree mon server
 ![img_51.png](images/img_51.png)
 et voila donc
+la on va a auth2 
+la on OAuth2 URL Generator ou Scopes.
+Dans Scopes, coche :
+- ✅ bot
 
 
 
+Dans Bot Permissions, coche :
+- ✅ View Channels
+- ✅ Send Messages
+- ✅ Read Message History on a les choae maintnen on copie lurl et on le colle dna autre pasge
+
+
+![img_71.png](images/img_71.png)
+
+puis on autohirze
+Ouvre cette URL dans ton navigateur.
+
+
+
+Sélectionne ton serveur Discord.
+
+
+
+Clique sur Continuer, puis Autoriser.
+![img_75.png](images/img_75.png)
+
+maintnnen on cheche notre .... e-bank-bot oln le voie donc on y accede et on lui dit bjr il di bjr je suis otn asisatnst banciare
+
+![img_72.png](images/img_72.png)
+je lui dit donne moi liste de slcinets il lafifche bien
+![img_73.png](images/img_73.png)
+apres je lui dit la liste des compte et voila il laffiche bien
+![img_74.png](images/img_74.png)
 et pour elgram  avc tlgram bot
 
 
@@ -1132,4 +1268,316 @@ puis on importe boostap et boo.incosn
 /* You can add global styles to this file, and also import other style files */
 @import "bootstrap/dist/css/bootstrap.min.css";
 @import "bootstrap-icons/font/bootstrap-icons.min.css";
+on pance lapp civa ngserve
+
+![img_56.png](images/img_56.png)
+voila linterface de notre app:
+
+![img_57.png](images/img_57.png)
+on passe achherhc e une tmeplate botstrat simple
+via getbootstrap.com/docs/5.0/components/navbar
+et voila le 
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#">Navbar</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="#">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/accounts">Accounts</a>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Dropdown
+          </a>
+          <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <li><a class="dropdown-item" href="#">Action</a></li>
+            <li><a class="dropdown-item" href="#">Another action</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#">Something else here</a></li>
+          </ul>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
+        </li>
+      </ul>
+      <form class="d-flex">
+        <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+        <button class="btn btn-outline-success" type="submit">Search</button>
+      </form>
+    </div>
+  </div>
+</nav>
+
+<router-outlet></router-outlet>
+
+t on le met dna sapp.html;
+la le menu ne march cad il faut importer bootsrap js dans style
+![img_58.png](images/img_58.png)
+on fait ajouer ca danms angukar.,jsom:
+"styles": [
+"src/styles.css"
+],
+"scripts": [
+"node_modules/bootstrap/dist/js/bootstrap.bundle.js"
+]
+et voila le js et le navbar marrhc ebien on redemarre ca marhce le navbar saffiche cad la lsiete deroulant  
+![img_59.png](images/img_59.png)
+on crre notre wb xompement: via ng g c accoutns et on lajoute dna sroute
+![img_60.png](images/img_60.png)
+eton lajoute dans route
+{path: "Accounts", component: Accounts},
+te 0n lafifche dans page tmeplate
+<a class="nav-link" routerLink="/accounts">Accounts</a>
+et voila on va a voir lapp ca marhce
+
+![img_61.png](images/img_61.png)
+on pasee ademarre notre bakcend 
+on passe dans notre compentnn
+import {Component, inject} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+
+@Component({
+selector: 'app-accounts',
+imports: [],
+templateUrl: './accounts.html',
+styleUrl: './accounts.css',
+})
+export class Accounts {
+private http=inject(HttpClient);
+accounts$ = this.http.get('http://localhost:9999/CUSTOMER-SERVICE/accounts');
+
+}
+
+avec onjr observabel scad que ne peux aafiche que subscriebe with
+
+accounts$ = this.http.get<any[]>('http://localhost:9999/CUSTOMER-SERVICE/accounts');
+
+on ajoute ca
+<div class="p-3">
+  @if (accounts$ | async; as accountList) {
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Balance</th>
+          <th>Date</th>
+          <th>Type</th>
+          <th>CustomerId</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (acc of accountList; track acc.id) {
+          <tr>
+            <td>{{ acc.id }}</td>
+            <td>{{ acc.balance }}</td>
+            <td>{{ acc.createdAt }}</td>
+            <td>{{ acc.type }}</td>
+            <td>{{ acc.customerId }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+}
+
+</div>
+on tets ca marhe pas car ya prob corss origin
+cad notr ebakcnen dnotaris pa sun fonrt end qui evin dun nutr enom de domain
+mas ici on jeoute dna sapp ,.yaml
+
+spring:
+cloud:
+gateway:
+server:
+webflux:
+globalcors:
+cors-configurations:
+'[/**]':
+allowed-origins: "*"
+allowed-methods: "*"
+allowed-headers: "*"
+on redmarrw gatweay
+et cbon ns aocutns  marche bien
+![img_62.png](images/img_62.png)
+donc on passe ac reer notre modle avec els deux model class:
+Account et account list voila nmotre model
+export interface Account {
+id? :string,
+balance? : number,
+createdAt ?: string,
+type? : string,
+customerId ?: number
+}
+export interface AccountList {
+accounts:  Account[]
+}
+
+![img_63.png](images/img_63.png)
+on passe maofidie dans notre
+accounts$ = this.http.get<Observable<AccountListState>>('http://localhost:9999/EBANK-SERVICE/accounts');
+et en d ca
+export interface Account {
+id? :string,
+balance? : number,
+createdAt ?: string,
+type? : string,
+customerId ?: number
+}
+export enum  RequestStatus {
+SUCCESS = 0, ERROR=1
+}
+export interface AccountListState {
+accounts?:  Account[],
+status?:  RequestStatus,
+message?: string
+
+
+}
+pour ..............
+pour catche lerr
+import {Component, inject} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+import {AsyncPipe} from '@angular/common';
+import {Account, AccountListState, RequestStatus} from '../model/account.model';
+import {catchError, map, Observable, of} from 'rxjs';
+
+@Component({
+selector: 'app-accounts',
+imports: [
+AsyncPipe
+],
+templateUrl: './accounts.html',
+styleUrl: './accounts.css',
+})
+export class Accounts {
+private http=inject(HttpClient);
+accounts$:Observable<AccountListState> = this.http.get<Account[]>
+('http://localhost:9999/EBANK-SERVICE/accounts')
+.pipe(map(resp => {
+return {accounts:resp, status:RequestStatus. SUCCESS}}),
+catchError((err, caught) => {
+return of({status : RequestStatus.ERROR, errorMessage : err.statusText})
+}));
+}
+
+
+et ici 
+
+<div class="p-3">
+  @if (accounts$ | async; as state) {
+    <table class="table">
+      <thead>
+      <tr>
+        <th>ID</th>
+        <th>Balance</th>
+        <th>Date</th>
+        <th>Type</th>
+        <th>CustomerId</th>
+      </tr>
+      </thead>
+
+      <tbody>
+        @for (acc of state.accounts; track acc) {
+          <tr>
+            <td>{{ acc.id }}</td>
+            <td>{{ acc.balance }}</td>
+            <td>{{ acc.createdAt }}</td>
+            <td>{{ acc.type }}</td>
+            <td>{{ acc.customerId }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+}
+</div>
+
+on demarre et vcbon saffiche tt les liste de compte
+![img_64.png](images/img_64.png)
+mais comme on a state on va faire
+@if (state.status == RequestStatus. ERROR){
+
+} @else if (state.status == RequestStatus.SUCCESS){ pour que si ya err  on affiche kle reer msg 
+on emt notre atble dednans succes et err sc div derr msg
+on essaye dinvener un err de endputns <div class="text-danger">
+{{state.message}}
+</div>
+ey voila on met pare xple endoui errone
+  ('http://localhost:9999/EBANK-SERVICE/act')
+voila not found affiche dna sbrqoeswe on corirge donc notre endpouitns 
+
+![img_65.png](images/img_65.png)
+on paasse a affiche in porgress que pour que si req est in prgress
+et pour se fiar eou doit linterpreste via un intercepteur
+et poru se fiar eon cree un service et pour se faire on fait
+ng g s services/loading 
+on on utlsie donc  un signal de type boolean avec vla def flaseet on cree meth ease loading et dset laoding
+![img_66.png](images/img_66.png)
+on  cree aussi notre instecptor loading
+
+import {Injectable, signal} from '@angular/core';
+
+@Injectable({
+providedIn: 'root',
+})
+export class LoadingService {
+loading = signal<boolean>(false);
+public isLoading = this.loading.asReadonly();
+public setLoaded(){
+this.loading.set(true);
+}
+
+}
+cad a chaue fosi jencvoie une req il passe par ce injector
+on injec note loading serveicce
+const loadingService=inject(LoadingService);
+
+on modifie ca
+import {Injectable, signal} from '@angular/core';
+
+@Injectable({
+providedIn: 'root',
+})
+export class LoadingService {
+loading = signal<boolean>(false);
+public isLoading = this.loading.asReadonly();
+public setLoading(value:boolean){
+this.loading.set(value);
+}
+
+}
+
+et dans intecepetoer on fait ... pou ....
+cad cahehremen n courrs vai
+loading.setLoading(true);
+et une fois rep arrive on laise apsser req t on fait pip aevc oper finalsize
+avent de laisee passer la rep on parofote dutlisr
+
+return next(req).pipe(finalize(()=>
+{
+loading.setLoading(false);
+}));
+la nous avons un ienntnceptor aui ait ce travilel eun fpois pour tt lapp
+on lject dans note app
+et pusi on ajoute le spinner dans notre div pour le loading des donnes
+je coorige ca en publi car proteced ne me prmemt pas de lappelr
+public isLoading = this.loading.asReadonly();
+
+pusi on ajoute ca a notre html
+
+    @if (loadingService.isLoading()) {
+      <div class="spinner-border text-primary" role="status">
+<span class="visually-hidden">Loading ...</span>
+</div>
+}
+![img_67.png](images/img_67.png)
+![img_68.png](images/img_68.png)
+![img_69.png](images/img_69.png)
+![img_70.png](images/img_70.png)
+
 
