@@ -32,7 +32,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     @Override
     public String getBotUsername() {
-        return "EbankBot";
+        return "e_bank_project1_bot";
     }
 
     @PostConstruct
