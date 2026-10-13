@@ -1575,9 +1575,13 @@ pusi on ajoute ca a notre html
 <span class="visually-hidden">Loading ...</span>
 </div>
 }
+
 ![img_67.png](images/img_67.png)
+
 ![img_68.png](images/img_68.png)
+
 ![img_69.png](images/img_69.png)
+
 ![img_70.png](images/img_70.png)
 
 
