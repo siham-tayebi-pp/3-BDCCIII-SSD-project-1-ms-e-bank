@@ -1076,6 +1076,108 @@ pour se fiare on ajoute un dependances
 telegrma cree prob avec ureka c pour cle aonntaville discord et apres tlegram
 on cree discord puis DiscordBot
 meth perodfm est invoque a chaue foit cleint discord envoie msg
+donc la on creer dans bot father unotre app et la on a donc le nom et lapi key de lapp
+![img_70.jpeg](images/img_70.jpeg)
+on a donc mis note code
+package net.tayebi.ebankbot.telegram;
+
+import net.tayebi.ebankbot.controllers.EbankAIAgent;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.TelegramBotsApi;
+import org.telegram.telegrambots.meta.api.methods.ActionType;
+import org.telegram.telegrambots.meta.api.methods.send.SendChatAction;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
+
+import jakarta.annotation.PostConstruct;
+
+@Component
+public class TelegramBot extends TelegramLongPollingBot {
+//TOken
+@Value("${telegram.token}")
+private String telegramBotToken;
+
+    private final EbankAIAgent aiAgent;
+
+    public TelegramBot(@Value("${telegram.token}") String telegramBotToken, EbankAIAgent aiAgent) {
+        super(telegramBotToken);
+        this.telegramBotToken = telegramBotToken;
+        this.aiAgent = aiAgent;
+    }
+
+    @Override
+    public String getBotUsername() {
+        return "e_bank_project1_bot";
+    }
+
+    @PostConstruct
+    public void registerTelegramBot() {
+        try {
+            TelegramBotsApi api = new TelegramBotsApi(DefaultBotSession.class);
+            api.registerBot(this);
+        } catch (TelegramApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    @Override
+    public void onUpdateReceived(Update update) {
+        try {
+            if (!update.hasMessage() || !update.getMessage().hasText()) return;
+
+            String messageText = update.getMessage().getText();
+            Long chatId = update.getMessage().getChatId();
+
+            sendTyping(chatId);
+
+            String answer = aiAgent.chat(messageText);
+
+            sendText(chatId, answer);
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void sendTyping(Long chatId) {
+        SendChatAction action = new SendChatAction();
+        action.setChatId(chatId.toString());
+        action.setAction(ActionType.TYPING);
+        try {
+            execute(action);
+        } catch (TelegramApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void sendText(Long chatId, String text) {
+        SendMessage message = new SendMessage();
+        message.setChatId(chatId.toString());
+        message.setText(text);
+        try {
+            execute(message);
+        } catch (TelegramApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+
+et voila on passe a etse note chat telgrma
+et voila on lui dmande bjr il dit jsne sias pas
+puis liste de sclint il lafifhce t 
+![img_69.jpeg](images/img_69.jpeg)
+et voila miaanntnon lui dmmande liste de comptes banciasr
+![img_68.jpeg](images/img_68.jpeg)
+donc notre clint telgram marhc etres bien
+
+
 si bot lui meme on traite pas msg ms sinn on traite pour eviter de triater nbcp de msg qui neveint qps de cleint discord
 
 package net.tayebi.ebankbot.discord;
@@ -1096,6 +1198,9 @@ event.getChannel().sendMessage(response).queue();
 }
 }
 
+voila nor bot discord 
+la on essyae creer un 
+
 mais pour que ca marhc eil nous fau un token
 
 je genre pusi je copie adres
@@ -1104,9 +1209,40 @@ https://discord.com/oauth2/authorize?client_id=1556820640508678228
 psui je cree mon server
 ![img_51.png](images/img_51.png)
 et voila donc
+la on va a auth2 
+la on OAuth2 URL Generator ou Scopes.
+Dans Scopes, coche :
+- ✅ bot
 
 
 
+Dans Bot Permissions, coche :
+- ✅ View Channels
+- ✅ Send Messages
+- ✅ Read Message History on a les choae maintnen on copie lurl et on le colle dna autre pasge
+
+
+![img_71.png](images/img_71.png)
+
+puis on autohirze
+Ouvre cette URL dans ton navigateur.
+
+
+
+Sélectionne ton serveur Discord.
+
+
+
+Clique sur Continuer, puis Autoriser.
+![img_75.png](images/img_75.png)
+
+maintnnen on cheche notre .... e-bank-bot oln le voie donc on y accede et on lui dit bjr il di bjr je suis otn asisatnst banciare
+
+![img_72.png](images/img_72.png)
+je lui dit donne moi liste de slcinets il lafifche bien
+![img_73.png](images/img_73.png)
+apres je lui dit la liste des compte et voila il laffiche bien
+![img_74.png](images/img_74.png)
 et pour elgram  avc tlgram bot
 
 
