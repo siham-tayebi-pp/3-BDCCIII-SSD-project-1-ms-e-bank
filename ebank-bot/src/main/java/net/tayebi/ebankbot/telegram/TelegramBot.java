@@ -18,7 +18,7 @@ import jakarta.annotation.PostConstruct;
 
 @Component
 public class TelegramBot extends TelegramLongPollingBot {
-//TOken
+
     @Value("${telegram.token}")
     private String telegramBotToken;
 
