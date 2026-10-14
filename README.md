@@ -1,6 +1,6 @@
-# Compte rendu : Projet eBank, Partie 3
+# Projet eBank : Partie 3
 
-## Frontend Angular
+## Frontend Angular (comptes, chatbot, Markdown et streaming)
 
 ---
 
@@ -172,7 +172,9 @@ export class Accounts {
 }
 ```
 
-> Les comptes sont gérés par **EBANK-SERVICE** (et non CUSTOMER-SERVICE). Pour que `HttpClient` soit injectable, il faut aussi déclarer `provideHttpClient()` dans `app.config.ts` (voir section 8, car on y ajoutera l'intercepteur).
+> Les comptes sont gérés par **EBANK-SERVICE** (et non CUSTOMER-SERVICE).
+>
+> Dans les versions récentes d'Angular (v21), `HttpClient` est disponible par défaut. Dans les versions plus anciennes, il faut déclarer `provideHttpClient()` dans `app.config.ts`. Dans tous les cas, `provideHttpClient(...)` reste nécessaire pour enregistrer un **intercepteur** (voir section 8).
 
 Avec un **Observable**, on ne peut afficher les données que si on s'y **abonne** (*subscribe*), ou avec le pipe `async` dans le template. On précise aussi le type :
 
@@ -220,7 +222,7 @@ On teste : ça ne marche pas, car il y a un **problème CORS** (*Cross-Origin Re
 
 C'est-à-dire que notre backend n'autorise pas un frontend qui vient d'un autre nom de domaine (ici le frontend est sur `localhost:4200`, et la Gateway sur `localhost:9999`).
 
-Ici, on ajoute dans le `application.yml` de la **Gateway** :
+On ajoute donc dans le `application.yml` de la **Gateway** :
 
 ```yaml
 spring:
@@ -470,7 +472,7 @@ On a ainsi un intercepteur qui fait ce travail **une fois pour toute l'applicati
 
 ### 8.3 Enregistrement de l'intercepteur
 
-On l'injecte dans notre application (`app.config.ts`) :
+On ajoute notre intercepteur dans `app.config.ts` pour qu'il fonctionne bien :
 
 ```ts
 import {ApplicationConfig} from '@angular/core';
@@ -507,37 +509,421 @@ Puis on ajoute le spinner dans notre `div`, pour le chargement des données :
 }
 ```
 
-Résultats :
+### 8.5 Test
+
+On essaie de mettre le navigateur en mode réseau lent (**Slow 3G** / **Slow 4G**, dans l'onglet *Network* des outils de développement), et voilà : on voit notre **spinner bleu**.
 
 ![img_67.png](images/img_67.png)
 
 ![img_68.png](images/img_68.png)
 
+---
+
+## 9. Intégration du chatbot dans Angular
+
+On passe à l'intégration de notre bot. On crée le composant `BotUi` (`ng g c bot-ui`) et on l'ajoute dans les routes :
+
+```ts
+{ path: "bot", component: BotUi },
+```
+
+Puis on ajoute un lien dans la navbar de `app.html` :
+
+```html
+<li class="nav-item">
+  <a class="nav-link" routerLink="/bot">ChatBot</a>
+</li>
+```
+
 ![img_69.png](images/img_69.png)
+
+Et voilà notre bot est ajouté dans la page :
 
 ![img_70.png](images/img_70.png)
 
+### 9.1 Le template HTML du composant `bot-ui`
+
+On modifie le HTML de notre composant `bot-ui` (champ de saisie + bouton de recherche avec une icône Bootstrap) :
+
+```html
+<div class="p-3">
+
+  <div class="card-body">
+    <input type="text" class="form-control m-2" style="display: inline; width: 80%">
+    <button class="btn btn-primary" style="display: inline">
+      <i class="bi bi-search"></i>
+    </button>
+  </div>
+
+</div>
+```
+
+![img_71.png](images/img_71.png)
+
+Et voilà, c'est bon.
+
+### 9.2 La variable `query` et le binding `ngModel`
+
+On déclare la variable `query` dans le fichier TypeScript de notre `BotUi` :
+
+```ts
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-bot-ui',
+  imports: [],
+  templateUrl: './bot-ui.html',
+  styleUrl: './bot-ui.css',
+})
+export class BotUi {
+  query: any;
+}
+```
+
+Puis on fait un **binding via `ngModel`** dans le template de `BotUi` (`[(ngModel)]="query"`, ce qui demande d'importer `FormsModule`). Ensuite, on fera le **streaming**, mais pas pour le moment.
+
+### 9.3 Vérification du bot avec l'URL
+
+Ici, je vérifie à nouveau que mon bot marche : je demande la liste des comptes, et c'est très bien, il les affiche, via l'URL :
+
+<http://localhost:9999/EBANK-BOT/chat?query=donne%20moi%20la%20liste%20des%20comptes%20bancaires>
+
+![img_72.png](images/img_72.png)
+
+### 9.4 Appel du bot avec `HttpClient`
+
+On injecte `HttpClient` dans notre composant bot :
+
+```ts
+import {Component, inject} from '@angular/core';
+import {FormsModule} from '@angular/forms';
+import {HttpClient} from '@angular/common/http';
+
+@Component({
+  selector: 'app-bot-ui',
+  imports: [
+    FormsModule
+  ],
+  templateUrl: './bot-ui.html',
+  styleUrl: './bot-ui.css',
+})
+export class BotUi {
+  query: any;
+  http: HttpClient = inject(HttpClient);
+}
+```
+
+![img_73.png](images/img_73.png)
+
+> Dans cette version (Angular 21), il n'est **pas nécessaire** d'ajouter `HttpClient` dans `app.config.ts` : il est fourni par défaut (sauf pour déclarer des intercepteurs, comme ci-dessus).
+
+On revient au bot : on déclare une réponse sous forme d'**Observable**. Le type est `Observable<any>`, et on utilise le point d'exclamation (`!`) pour ne pas l'initialiser à la déclaration, mais seulement dans la méthode `askAgent()`.
+
+```ts
+import {Component, inject} from '@angular/core';
+import {FormsModule} from '@angular/forms';
+import {HttpClient} from '@angular/common/http';
+import {Observable} from 'rxjs';
+
+@Component({
+  selector: 'app-bot-ui',
+  imports: [
+    FormsModule
+  ],
+  templateUrl: './bot-ui.html',
+  styleUrl: './bot-ui.css',
+})
+export class BotUi {
+  query: any;
+  http: HttpClient = inject(HttpClient);
+  response$!: Observable<any>;
+
+  askAgent() {
+    this.response$ = this.http.get("http://localhost:9999/EBANK-BOT/chat?query=" + this.query);
+  }
+}
+```
+
+Et dans la page HTML, dans un `div`, on affiche la réponse :
+
+```html
+<div class="card-body">
+  @if (response$ | async; as botResponse) {
+    {{ botResponse }}
+  }
+</div>
+```
+
+### 9.5 `responseType: 'text'`
+
+On teste : on voit bien la réponse, la liste des comptes :
+
+![img_74.png](images/img_74.png)
+
+Maintenant, on veut que, quand on envoie la requête HTTP, le client sache que la réponse est du **texte** (le backend renvoie `text/plain`) :
+
+```ts
+askAgent() {
+  this.response$ = this.http.get("http://localhost:9999/EBANK-BOT/chat?query=" + this.query,
+    { responseType: 'text' }
+  );
+}
+```
+
+Maintenant, si on tape la question, la réponse s'affiche directement dans la page (plus besoin d'aller dans les outils de développement pour voir la réponse) :
+
+![img_75.png](images/img_75.png)
+
+> **Amélioration :** plutôt que de concaténer la question dans l'URL, on utilise les `params` de `HttpClient`, qui encodent correctement les espaces, accents et caractères spéciaux :
+>
+> ```ts
+> this.http.get("http://localhost:9999/EBANK-BOT/chat", {
+>   params: { query: this.query },
+>   responseType: 'text'
+> });
+> ```
+
 ---
 
-## 9. Récapitulatif des corrections apportées
+## 10. Affichage en Markdown (ngx-markdown)
+
+La réponse du bot est du **Markdown** (tableaux, listes…). On installe donc la dépendance :
+
+```bash
+npm i ngx-markdown
+```
+
+(selon la version, la bibliothèque `marked` peut devoir être installée aussi : `npm i marked`.)
+
+Et dans la configuration (`app.config.ts`), on ajoute `provideMarkdown()` :
+
+![img_76.png](images/img_76.png)
+
+![img_77.png](images/img_77.png)
+
+```ts
+providers: [
+  provideRouter(routes),
+  provideHttpClient(withInterceptors([loadingInterceptor])),
+  provideMarkdown()
+]
+```
+
+On importe `MarkdownComponent` dans les `imports` du composant `BotUi`, et on l'utilise dans le HTML du composant bot :
+
+```html
+<markdown [data]="botResponse">
+
+</markdown>
+```
+
+Et on teste : on demande « Donne-moi la liste des comptes bancaires » :
+
+![img_78.png](images/img_78.png)
+
+Puis « Donne-moi la liste des clients ». Ça marche très bien :
+
+![img_79.png](images/img_79.png)
+
+On demande aussi : « Donne-moi la liste des comptes bancaires sous forme d'un tableau » :
+
+![img_80.png](images/img_80.png)
+
+« Donne-moi la liste des comptes bancaires du client Imane sous forme d'un tableau » :
+
+![img_81.png](images/img_81.png)
+
+On veut aussi **ajouter un compte** : « Ajoute un compte bancaire avec balance=3400 de type current account et pour customer c'est Siham ». C'est bon, ça ajoute très bien :
+
+![img_82.png](images/img_82.png)
+
+Pour vérifier, on affiche tous les comptes de Siham pour voir s'il a été ajouté : « Donne-moi la liste des comptes bancaires de Siham sous forme de tableau ». Et voilà, on le voit bien ici :
+
+![img_83.png](images/img_83.png)
+
+---
+
+## 11. Spinner dans le chatbot
+
+On ajoute aussi le **spinner « en cours »** pour le cas où la réponse n'est pas encore prête, comme dans le cas des accounts avant :
+
+```html
+@if (loadingService.isLoading()) {
+  <div class="spinner-border text-primary" role="status">
+    <span class="visually-hidden">Loading ...</span>
+  </div>
+}
+```
+
+Mais on injecte donc le service dans notre `bot-ui.ts` :
+
+```ts
+loadingService = inject(LoadingService);
+```
+
+On teste, et voilà : le spinner s'affiche en attendant la réponse :
+
+![img_84.png](images/img_84.png)
+
+---
+
+## 12. Streaming de la réponse
+
+Maintenant, si on fait un chatbot, on aura besoin du **streaming** : dès qu'un morceau de la réponse arrive, on l'affiche, sans attendre que toute la réponse soit prête.
+
+### 12.1 Côté backend (`ebank-bot`)
+
+Pour faire ce streaming, on va dans `ebank-bot` pour ajouter un nouvel endpoint `/chat-streaming`. Au lieu de retourner un `String`, on retourne un **`Flux<String>`**.
+
+On ajoute ceci dans l'agent (`EbankAIAgent`) :
+
+```java
+public Flux<String> chatStream(String query) {
+    return chatClient
+            .prompt()
+            .user(query)
+            .advisors(a -> a.param(
+                    ChatMemory.CONVERSATION_ID,
+                    "user-1"
+            ))
+            .stream()
+            .content();
+}
+```
+
+Et ceci dans le contrôleur :
+
+```java
+@GetMapping(value = "/chat-streaming", produces = MediaType.TEXT_PLAIN_VALUE)
+public Flux<String> chatStreaming(
+        @RequestParam(name = "query", defaultValue = "Bonjour") String query) {
+
+    return ebankAIAgent.chatStream(query);
+}
+```
+
+(imports : `reactor.core.publisher.Flux` et `org.springframework.http.MediaType`.)
+
+On redémarre le bot. Et voilà, nos comptes s'affichent en mode streaming :
+
+![img_85.png](images/img_85.png)
+
+![img_86.png](images/img_86.png)
+
+### 12.2 Côté Angular
+
+Maintenant, comment faire ce streaming dans Angular ? On crée, dans la partie bot, une méthode `askAgentStream()` avec un `pipe` : à chaque événement qui arrive, on utilise `map`.
+
+La requête est configurée avec `observe: 'events'` et `reportProgress: true` pour recevoir les événements de progression du téléchargement :
+
+```ts
+import {Component, inject} from '@angular/core';
+import {FormsModule} from '@angular/forms';
+import {HttpClient, HttpDownloadProgressEvent, HttpEventType} from '@angular/common/http';
+import {map, Observable} from 'rxjs';
+import {MarkdownComponent} from 'ngx-markdown';
+import {LoadingService} from '../services/loading';
+
+@Component({
+  selector: 'app-bot-ui',
+  imports: [FormsModule, MarkdownComponent, AsyncPipe],
+  templateUrl: './bot-ui.html',
+  styleUrl: './bot-ui.css',
+})
+export class BotUi {
+  query: string = '';
+  private http = inject(HttpClient);
+  loadingService = inject(LoadingService);
+  response$!: Observable<any>;
+
+  askAgentStream() {
+    this.response$ = this.http.get("http://localhost:9999/EBANK-BOT/chat-streaming", {
+      params: { query: this.query },
+      responseType: 'text',
+      observe: 'events',
+      reportProgress: true
+    }).pipe(
+      map(event => {
+        switch (event.type) {
+          case HttpEventType.Sent:
+            return { type: 'Sent' };
+          case HttpEventType.DownloadProgress:
+            return { type: 'Response', content: (event as HttpDownloadProgressEvent).partialText };
+          case HttpEventType.Response:
+            return { type: 'Response', content: event.body };
+          default:
+            return { type: 'Other', data: event };
+        }
+      })
+    );
+  }
+}
+```
+
+(`AsyncPipe` s'importe depuis `@angular/common`.)
+
+Et dans le HTML, on appelle `askAgentStream()` :
+
+```html
+<button (click)="askAgentStream()" class="btn btn-primary" style="display: inline">
+  <i class="bi bi-search"></i>
+</button>
+```
+
+On teste donc : voilà, ça marche en streaming, la réponse s'affiche en temps réel :
+
+![img_87.png](images/img_87.png)
+
+Dans le template, on affiche les événements de type `Response` avec le composant Markdown :
+
+```html
+<div class="card-body">
+  @if (response$ | async; as resp) {
+    @if (resp.type == 'Response') {
+      <markdown [data]="resp.content"></markdown>
+    }
+  }
+</div>
+```
+
+Et on met `reportProgress: true` dans les options de la requête (déjà fait ci-dessus). On teste, et voilà, ça s'affiche en mode streaming :
+
+![img_88.png](images/img_88.png)
+
+On teste avec « liste des comptes bancaires sous forme de tableau avec bordure » : c'est bon, le tableau s'affiche en streaming :
+
+![img_89.png](images/img_89.png)
+
+---
+
+## 13. Récapitulatif des corrections apportées
 
 | # | Endroit | Erreur dans la version d'origine | Correction |
 |---|---|---|---|
 | 1 | Image `img_52` | Crochets parasites autour du lien image | Lien image corrigé |
-| 2 | `angular.json` | Instructions peu claires sur l'emplacement | Précisé : `build → options` (`styles` + `scripts`) |
+| 2 | `angular.json` | Emplacement peu clair | Précisé : `build → options` (`styles` + `scripts`) |
 | 3 | Navbar | `RouterLink` / `RouterOutlet` à importer non mentionnés | Remarque ajoutée |
 | 4 | Commande | `ng g c accoutns` (faute de frappe) | `ng g c accounts` |
 | 5 | Route | `path: "Accounts"` alors que `routerLink="/accounts"` (Angular est sensible à la casse) | `path: "accounts"` |
 | 6 | Premier appel HTTP | URL `CUSTOMER-SERVICE/accounts` alors que les comptes sont dans EBANK-SERVICE | `EBANK-SERVICE/accounts` |
-| 7 | `app.config.ts` | `provideHttpClient()` non mentionné (HttpClient non injectable) | Ajouté (avec l'intercepteur) |
-| 8 | Composant | `AsyncPipe` non importé dans la première version | Ajouté à `imports` |
-| 9 | Gateway YAML (CORS) | Indentation cassée | YAML valide ; remarque sur `"*"` en production |
-| 10 | Appel HTTP | `get<Observable<AccountListState>>(...)` (mauvais type : la réponse est un tableau de comptes) | `get<Account[]>(...)` + `map` vers `AccountListState` |
-| 11 | `catchError` | `errorMessage` alors que l'interface déclare `message` ; paramètre `caught` inutile | `message: err.statusText`, paramètre retiré |
-| 12 | Template | `RequestStatus` utilisé dans le template sans être exposé par le composant | `protected readonly RequestStatus = RequestStatus;` |
-| 13 | Template | `track acc` (suit l'objet entier) | `track acc.id` |
-| 14 | `LoadingService` | `setLoaded()` mettait toujours `true` (nom trompeur) | `setLoading(value: boolean)` |
-| 15 | Intercepteur | Enregistrement dans `app.config.ts` non montré | `provideHttpClient(withInterceptors([...]))` |
-| 16 | Spinner | Accès à `isLoading` impossible depuis le template (membre non public) | Service injecté en `public` dans le composant |
-| 17 | Spinner | Booléen unique fragile avec plusieurs requêtes simultanées | Remarque ajoutée (compteur de requêtes) |
-| 18 | Orthographe / formulation | Nombreuses fautes de frappe (« Bootstrat », « intecepetoer », « cad »…) | Texte reformulé et corrigé |
+| 7 | Composant | `AsyncPipe` non importé dans la première version | Ajouté à `imports` |
+| 8 | Gateway YAML (CORS) | Indentation cassée | YAML valide ; remarque sur `"*"` en production |
+| 9 | Appel HTTP | `get<Observable<AccountListState>>(...)` (mauvais type) | `get<Account[]>(...)` + `map` vers `AccountListState` |
+| 10 | `catchError` | `errorMessage` alors que l'interface déclare `message` ; paramètre `caught` inutile | `message: err.statusText` |
+| 11 | Template | `RequestStatus` utilisé dans le template sans être exposé par le composant | `protected readonly RequestStatus = RequestStatus;` |
+| 12 | Template | `track acc` (suit l'objet entier) | `track acc.id` |
+| 13 | `LoadingService` | `setLoaded()` mettait toujours `true` | `setLoading(value: boolean)` |
+| 14 | Intercepteur | Enregistrement dans `app.config.ts` non montré | `provideHttpClient(withInterceptors([...]))` |
+| 15 | Spinner | Accès à `isLoading` impossible depuis le template | Service injecté en `public` dans le composant |
+| 16 | Spinner | Booléen unique fragile avec plusieurs requêtes simultanées | Remarque ajoutée (compteur de requêtes) |
+| 17 | `BotUi` | Variable `askAgent: any;` laissée dans une version intermédiaire (méthode et propriété du même nom) | Supprimée, `askAgent()` est une vraie méthode |
+| 18 | `BotUi` | Question concaténée dans l'URL (`"...?query=" + this.query`), mal encodée avec espaces/accents/`&` | Utilisation de `params: { query: this.query }` |
+| 19 | Template `bot-ui` | `ngModel` et `(click)` non montrés dans le HTML | Binding `[(ngModel)]="query"` et `(click)` précisés |
+| 20 | Template streaming | Faute de frappe `'Respponse'` : la condition n'était jamais vraie | `'Response'` |
+| 21 | Streaming | `reportProgress` ajouté seulement à la fin | Inclus dès la déclaration de la requête |
+| 22 | Markdown | `MarkdownComponent` à importer dans le composant non mentionné | Ajouté aux `imports` |
+| 23 | Streaming backend | Imports `Flux` / `MediaType` non mentionnés | Ajoutés |
+| 24 | `EbankAIAgent.chatStream` | `"user-1"` identique pour tous les utilisateurs (mémoire partagée) | Remarque conservée côté partie 2 (identifiant par utilisateur recommandé) |
+| 25 | `HttpClient` | Il fallait `provideHttpClient()` dans les anciennes versions | Précisé : inutile par défaut en Angular 21, sauf pour les intercepteurs |
+| 26 | Images | Les noms `img_68` à `img_75` sont réutilisés dans les parties 2 et 3 (même nom de fichier) | Utiliser des noms uniques (ex. `partie3_img_68.png`) pour éviter les écrasements |
+| 27 | Orthographe / formulation | Nombreuses fautes de frappe et phrases incomplètes (« ngmodel », « streming », « intecepetoer »…) | Texte reformulé et corrigé |
