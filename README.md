@@ -1,4 +1,6 @@
-## Présentation du projet eBank
+# Compte rendu : Projet eBank (architecture microservices)
+
+## 1. Présentation du projet eBank
 
 Dans ce projet, nous allons développer une application **eBank basée sur une architecture microservices**.
 
@@ -128,65 +130,90 @@ L'architecture finale du projet sera donc composée des éléments suivants :
 
 L'objectif final est donc de construire une **application eBank moderne basée sur les microservices**, puis d'y intégrer un **chatbot intelligent basé sur Spring AI et un LLM**, capable de comprendre les questions des utilisateurs, de sélectionner automatiquement les services nécessaires via **MCP**, de récupérer les données appropriées et de générer une réponse contextualisée, avec une interaction possible à la fois depuis **Angular et Telegram**.
 
-Voila le projet que nous avons creer
-![img.png](images/img.png) sans aucune depndances et la on va ajoute les microserviec 
-1- customer microsrevice :
+---
+
+## 2. Création du projet parent
+
+Voici le projet que nous avons créé, sans aucune dépendance. Ensuite, nous allons y ajouter les microservices un par un.
+
+![img.png](images/img.png)
+
+---
+
+## 3. Customer Service
+
+### 3.1 Création du microservice
+
 ![img_2.png](images/img_2.png)
-avec depndecies:
 
-spirng web , jpa , h2 db, lombok ,  eureka discovery client qui pemrte au microsrvice de senregitsrer
-, checrher config via  config clien t , pusi  actuator pour ts qui est monitoring des microservice 
-apres on va ajouter mcp une fois on arrive au chabot part
+**Dépendances :**
+
+| Dépendance | Rôle |
+|---|---|
+| Spring Web | Création de l'API REST |
+| Spring Data JPA | Accès aux données |
+| H2 Database | Base de données en mémoire |
+| Lombok | Réduction du code répétitif (getters, setters, constructeurs, builder) |
+| Eureka Discovery Client | Permet au microservice de **s'enregistrer** auprès du Discovery Service |
+| Config Client | Permet au microservice de **chercher sa configuration** auprès du Config Service |
+| Actuator | **Monitoring** du microservice |
+
+> La dépendance **MCP** sera ajoutée plus tard, lorsque nous arriverons à la partie Chatbot.
+
 ![img_1.png](images/img_1.png)
-on cere pavkages:
-enities:
-Customer
-![img_3.png](images/img_3.png)
-repositories
-CustomerRepository
-![img_4.png](images/img_4.png)
- services
-CustomerService
-![img_5.png](images/img_5.png)
-controllers
 
-CustomerController
+### 3.2 Structure des packages
 
-![img_6.png](images/img_6.png)
+On crée les packages suivants :
+
+* `entities` : `Customer`
+  ![img_3.png](images/img_3.png)
+* `repositories` : `CustomerRepository`
+  ![img_4.png](images/img_4.png)
+* `services` : `CustomerService`
+  ![img_5.png](images/img_5.png)
+* `controllers` : `CustomerRestController`
+  ![img_6.png](images/img_6.png)
+
+### 3.3 Entité `Customer`
+
+```java
 package net.tayebi.customerservice.entities;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import lombok .*;
-
-@Entity
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class Customer {
-@Id @GeneratedValue
-private Long id;
-private String name;
-private String email;
-}
-
-
-package net.tayebi.customerservice.repositories;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import lombok.*;
+
+@Entity
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+public class Customer {
+    @Id @GeneratedValue
+    private Long id;
+    private String name;
+    private String email;
+}
+```
+
+### 3.4 Repository `CustomerRepository`
+
+```java
+package net.tayebi.customerservice.repositories;
+
 import net.tayebi.customerservice.entities.Customer;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface CustomerRepository extends JpaRepository<Customer,Long> {
+public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
 }
+```
 
+### 3.5 Service `CustomerService`
 
+```java
 package net.tayebi.customerservice.services;
-
 
 import net.tayebi.customerservice.entities.Customer;
 import net.tayebi.customerservice.repositories.CustomerRepository;
@@ -196,31 +223,34 @@ import java.util.List;
 
 @Service
 public class CustomerService {
-private CustomerRepository customerRepository;
+
+    private final CustomerRepository customerRepository;
 
     public CustomerService(CustomerRepository customerRepository) {
         this.customerRepository = customerRepository;
     }
 
-    public List<Customer> getAllCustomers(){
-            return customerRepository.findAll();
+    public List<Customer> getAllCustomers() {
+        return customerRepository.findAll();
     }
 
-    public Customer findCustomerById(Long id){
-                return customerRepository.findById(id)
-                        .orElseThrow(()->new RuntimeException(String.format("Customer with id %s not found", id)));
+    public Customer findCustomerById(Long id) {
+        return customerRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException(String.format("Customer with id %s not found", id)));
     }
-    public  Customer createCustomer(Customer customer){
+
+    public Customer createCustomer(Customer customer) {
         return customerRepository.save(customer);
     }
 }
+```
 
+### 3.6 Contrôleur `CustomerRestController`
 
+```java
 package net.tayebi.customerservice.controllers;
 
-
 import net.tayebi.customerservice.entities.Customer;
-import net.tayebi.customerservice.repositories.CustomerRepository;
 import net.tayebi.customerservice.services.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -229,38 +259,45 @@ import java.util.List;
 
 @RestController
 public class CustomerRestController {
-@Autowired
-private CustomerService customerService;
+
+    @Autowired
+    private CustomerService customerService;
 
     @GetMapping("/customers")
-    public List<Customer> getAllCustomers(){
+    public List<Customer> getAllCustomers() {
         return customerService.getAllCustomers();
     }
 
     @GetMapping("/customers/{id}")
-    public Customer findCustomerById(@PathVariable  Long id){
+    public Customer findCustomerById(@PathVariable Long id) {
         return customerService.findCustomerById(id);
     }
+
     @PostMapping("/customers")
-    public  Customer createCustomer(@RequestBody Customer customer){
+    public Customer createCustomer(@RequestBody Customer customer) {
         return customerService.createCustomer(customer);
     }
-
 }
-la on a path vraibale cad le param est dna sle path mas request body cad que lobj est dans le body  pas dans path
-@PathVariable → donnée dans l'URL
-@RequestBody → donnée dans le corps de la requête
+```
 
-contreler advise : permet de gere les axcepions 
-on peu aussi faire des exception handler pour que si ya eception on la prend et on lenvie via http
+**Différence entre `@PathVariable` et `@RequestBody` :**
 
-on passe acree cmd line runner:
+* `@PathVariable` → la donnée se trouve **dans l'URL** (ex. `/customers/3`).
+* `@RequestBody` → la donnée (l'objet) se trouve **dans le corps de la requête**, et non dans l'URL.
 
-on ajoute notr bean qui sert acreer nos customers:
+**Gestion des exceptions :**
+
+* `@ControllerAdvice` (ou `@RestControllerAdvice`) permet de **gérer les exceptions de manière centralisée**.
+* On peut aussi créer des `@ExceptionHandler` : lorsqu'une exception est levée, on l'intercepte et on renvoie une réponse HTTP appropriée (ex. 404 au lieu d'une erreur 500).
+
+### 3.7 `CommandLineRunner` : initialisation des données
+
+On ajoute un bean qui sert à créer nos customers au démarrage :
+
+```java
 package net.tayebi.customerservice;
 
 import net.tayebi.customerservice.entities.Customer;
-import net.tayebi.customerservice.repositories.CustomerRepository;
 import net.tayebi.customerservice.services.CustomerService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -275,31 +312,33 @@ public class CustomerServiceApplication {
     public static void main(String[] args) {
         SpringApplication.run(CustomerServiceApplication.class, args);
     }
+
     @Bean
     public CommandLineRunner start(CustomerService customerService) {
         return args -> {
-           List<String> names= List.of("siham","imane","omar","ali","fouzia" );
-           names.forEach(name -> {
-               customerService.createCustomer(
-                       Customer.builder()
-                               .name(name)
-                               .email(name+"@gmail.com")
-                               .build()
-               );
-           });
+            List<String> names = List.of("siham", "imane", "omar", "ali", "fouzia");
+            names.forEach(name -> {
+                customerService.createCustomer(
+                        Customer.builder()
+                                .name(name)
+                                .email(name + "@gmail.com")
+                                .build()
+                );
+            });
         };
-
     }
-
 }
-et apr son passe au config 
+```
 
-on descative
-spring.cloud.config.discovery.enabled=false
- sinn il va passer a charcher a senrgistrer 
-et on descative auss noter config sinn il va chercher un servcie de config centralise 
-e donc snotre config
-spring.application.name=customer-service
+### 3.8 Configuration (`application.properties`)
+
+On **désactive** :
+
+* `spring.cloud.config.enabled=false` : sinon le microservice va chercher un service de configuration centralisé (qui n'existe pas encore).
+* `eureka.client.enabled=false` : sinon il va essayer de s'enregistrer auprès d'Eureka (qui n'existe pas encore).
+* `spring.cloud.config.discovery.enabled=false` : sinon il va essayer de trouver le Config Service via la découverte.
+
+```properties
 spring.application.name=customer-service
 server.port=8056
 spring.cloud.config.discovery.enabled=false
@@ -307,45 +346,61 @@ spring.cloud.config.enabled=false
 eureka.client.enabled=false
 spring.datasource.url=jdbc:h2:mem:customers-db
 spring.h2.console.enabled=true
+```
 
-on demarre notre app
-http://localhost:8056/customers
+### 3.9 Test de l'application
+
+On démarre l'application puis on consulte : <http://localhost:8056/customers>
 
 ![img_7.png](images/img_7.png)
-et vpila donc tt nos customers 
-on va au bd ss url :
-http://localhost:8056/h2-console
 
-e voila ca faiche tt nos cyustomers 
- ![img_8.png](images/img_8.png)
+Voilà tous nos customers. On peut aussi consulter la base de données via la console H2 : <http://localhost:8056/h2-console>
 
-puis pon ajoute notre documentation swagger:
+Et voilà, la console affiche tous nos customers :
+
+![img_8.png](images/img_8.png)
+
+### 3.10 Documentation Swagger
+
+Ensuite, on ajoute la documentation Swagger :
+
+```xml
 <dependency>
-<groupId>org.springdoc</groupId>
-<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-<version>3.1.1</version>
+    <groupId>org.springdoc</groupId>
+    <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+    <version>3.1.1</version>
 </dependency>
-et voila notre dweb api 
+```
+
+Et voilà notre documentation de l'API web : <http://localhost:8056/swagger-ui/index.html>
+
 ![img_9.png](images/img_9.png)
-http://localhost:8056/swagger-ui/index.html
-on etst les donc
-GET
-/customers
+
+On teste donc les endpoints :
+
+**GET `/customers`**
+
 ![img_10.png](images/img_10.png)
 
-
-POST
-/customers
+**POST `/customers`**
 
 ![img_11.png](images/img_11.png)
 
-GET
-/customers/{id}
+**GET `/customers/{id}`**
+
 ![img_12.png](images/img_12.png)
-onn pase a creer notre ebank service:
-avec el meme dependencies que custoemr service
+
+---
+
+## 4. eBank Service
+
+On passe à la création de notre **eBank Service**, avec les **mêmes dépendances** que Customer Service.
+
 ![img_13.png](images/img_13.png)
-et on jaoute aussie
+
+On ajoute aussi les packages suivants :
+
+```text
 entities
 └── BankAccount
 
@@ -357,80 +412,21 @@ services
 
 controllers
 └── BankAccountController
+
 model
-|____ Customer
+└── Customer
+```
 
+### 4.1 Entité `BankAccount`
 
-
-
-package net.tayebi.ebankservice.services;
-
-import net.tayebi.ebankservice.entities.BankAccount;
-import net.tayebi.ebankservice.repositories.BankAccountRepository;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-
-@Service
-public class BankAccountService {
-private BankAccountRepository accountRepository;
-
-    public BankAccountService(BankAccountRepository accountRepository){
-        this.accountRepository = accountRepository;
-    }
-    public List<BankAccount> getAllBankAccounts(){
-        return accountRepository.findAll();
-    }
-
-    public BankAccount getBankAccountById(String id){
-            return accountRepository.findById(id)
-                    .orElseThrow(()->new RuntimeException("Account not found"));
-    }
-
-    public BankAccount save(BankAccount bankAccount){
-                return accountRepository.save(bankAccount);
-    }
-}
-
-
-package net.tayebi.ebankservice.controllers;
-
-import net.tayebi.ebankservice.entities.BankAccount;
-import net.tayebi.ebankservice.repositories.BankAccountRepository;
-import net.tayebi.ebankservice.services.BankAccountService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-
-@RestController
-public class BankAccountController {
-@Autowired
-private BankAccountService bankAccountService;
-
-    @GetMapping("/accounts")
-    public List<BankAccount> getAllBankAccounts(){
-        return bankAccountService.getAllBankAccounts();
-    }
-
-    @GetMapping("/accounts/{id}")
-    public BankAccount getBankAccountById(@PathVariable String id){
-        return bankAccountService.getBankAccountById(id);
-    }
-
-    @PostMapping("/accounts")
-    public BankAccount save(@RequestBody  BankAccount bankAccount){
-        return bankAccountService.save(bankAccount);
-    }
-
-}
-
-
+```java
 package net.tayebi.ebankservice.entities;
 
+import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -438,22 +434,29 @@ import net.tayebi.ebankservice.model.Customer;
 
 import java.util.Date;
 
+@Entity
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class BankAccount {
-@Id
-private String id;
-private Date createdAt;
-private double balance;
-private String type;
-private long customerId;
-@Transient
-private Customer customer;
+    @Id
+    private String id;
+    private Date createdAt;
+    private double balance;
+    private String type;
+    private Long customerId;
+    @Transient
+    private Customer customer;
 }
+```
 
+> `@Transient` : le champ `customer` n'est **pas persisté** en base. Il est rempli dynamiquement via OpenFeign à partir de `customerId`.
 
+### 4.2 Modèle `Customer` (côté eBank Service)
+
+```java
 package net.tayebi.ebankservice.model;
 
 import lombok.*;
@@ -464,12 +467,15 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class Customer {
-private Long id;
-private String name;
-private String email;
+    private Long id;
+    private String name;
+    private String email;
 }
+```
 
+### 4.3 Repository `BankAccountRepository`
 
+```java
 package net.tayebi.ebankservice.repositories;
 
 import net.tayebi.ebankservice.entities.BankAccount;
@@ -481,13 +487,86 @@ public interface BankAccountRepository extends JpaRepository<BankAccount, String
 
     List<BankAccount> findByCustomerId(Long id);
 }
+```
 
-on pase dan sbean a se service pour cree rdes acounts
+### 4.4 Service `BankAccountService` (version initiale)
 
-package net.tayebi.ebankservice;
+```java
+package net.tayebi.ebankservice.services;
 
 import net.tayebi.ebankservice.entities.BankAccount;
 import net.tayebi.ebankservice.repositories.BankAccountRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class BankAccountService {
+
+    private final BankAccountRepository accountRepository;
+
+    public BankAccountService(BankAccountRepository accountRepository) {
+        this.accountRepository = accountRepository;
+    }
+
+    public List<BankAccount> getAllBankAccounts() {
+        return accountRepository.findAll();
+    }
+
+    public BankAccount getBankAccountById(String id) {
+        return accountRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+    }
+
+    public BankAccount save(BankAccount bankAccount) {
+        return accountRepository.save(bankAccount);
+    }
+}
+```
+
+### 4.5 Contrôleur `BankAccountController`
+
+```java
+package net.tayebi.ebankservice.controllers;
+
+import net.tayebi.ebankservice.entities.BankAccount;
+import net.tayebi.ebankservice.services.BankAccountService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+public class BankAccountController {
+
+    @Autowired
+    private BankAccountService bankAccountService;
+
+    @GetMapping("/accounts")
+    public List<BankAccount> getAllBankAccounts() {
+        return bankAccountService.getAllBankAccounts();
+    }
+
+    @GetMapping("/accounts/{id}")
+    public BankAccount getBankAccountById(@PathVariable String id) {
+        return bankAccountService.getBankAccountById(id);
+    }
+
+    @PostMapping("/accounts")
+    public BankAccount save(@RequestBody BankAccount bankAccount) {
+        return bankAccountService.save(bankAccount);
+    }
+}
+```
+
+### 4.6 `CommandLineRunner` : création des comptes
+
+On ajoute un bean dans la classe principale pour créer des comptes (5 comptes pour chacun des 3 premiers customers) :
+
+```java
+package net.tayebi.ebankservice;
+
+import net.tayebi.ebankservice.entities.BankAccount;
 import net.tayebi.ebankservice.services.BankAccountService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -497,104 +576,147 @@ import org.springframework.context.annotation.Bean;
 @SpringBootApplication
 public class EbankServiceApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(EbankServiceApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(EbankServiceApplication.class, args);
+    }
 
-	@Bean
-	CommandLineRunner init(BankAccountService bankAccountService) {
-		return args -> {
-			for (int i = 1; i <= 3; i++) {
-				for (int j = 0; j <5 ; j++) {
-					bankAccountService.save(
-							BankAccount.builder()
-							. type (Math.random()>0.5? "CURRENT-ACCOUNT": "SAVING_ACCOUNT")
-									.balance(1000+ Math.random()*60000)
-									.customerId(i)
-									.build());
-				}
-		};
-
-	}
-
+    @Bean
+    CommandLineRunner init(BankAccountService bankAccountService) {
+        return args -> {
+            for (long i = 1; i <= 3; i++) {
+                for (int j = 0; j < 5; j++) {
+                    bankAccountService.save(
+                            BankAccount.builder()
+                                    .type(Math.random() > 0.5 ? "CURRENT_ACCOUNT" : "SAVING_ACCOUNT")
+                                    .balance(1000 + Math.random() * 60000)
+                                    .customerId(i)
+                                    .build());
+                }
+            }
+        };
+    }
 }
+```
 
-on pase au config de cet app ou de c microservice
+### 4.7 Configuration d'eBank Service
 
-
+```properties
 spring.application.name=ebank-service
 server.port=8057
 eureka.client.enabled=false
 spring.cloud.config.enabled=false
-spring.cloud.discovery.enabled=false
+spring.cloud.config.discovery.enabled=false
+spring.datasource.url=jdbc:h2:mem:accounts-db
 spring.h2.console.enabled=true
-on execute le donc
-on tetste
+```
 
-avnmat on ajoute aussi de swagger
+On exécute, puis on teste.
+
+### 4.8 Swagger
+
+Avant de tester, on ajoute aussi Swagger :
+
+```xml
 <dependency>
-<groupId>org.springdoc</groupId>
-<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-<version>3.1.1</version>
+    <groupId>org.springdoc</groupId>
+    <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+    <version>3.1.1</version>
 </dependency>
+```
+
 ![img_14.png](images/img_14.png)
-o ntets notre api domcn 
-test gde get all 
+
+On teste donc notre API.
+
+**Test de `GET /accounts` (get all)**
+
 ![img_15.png](images/img_15.png)
 
-get by id 
+**Test de `GET /accounts/{id}` (get by id)**
+
 ![img_17.png](images/img_17.png)
 
-on passe a creer notre gaway service: avc depnednecies:
-reactive gateway, discovery clin, actuiator
+---
+
+## 5. API Gateway
+
+On passe à la création de notre **Gateway Service**, avec les dépendances :
+
+* Reactive Gateway
+* Discovery Client (Eureka Discovery Client)
+* Actuator
 
 ![img_16.png](images/img_16.png)
 
+### 5.1 Routage statique
 
+Pour le **routage statique**, on utilise un fichier de configuration `application.yml` :
 
-Pour rutage statique on utulsie sfiche de config .yaml
-
-ca c rouage stattique:
+```yaml
 spring:
-cloud:
-gateway:
-server:
-webflux:
-routes:
-- id : r1
-uri: http://localhost:8056
-predicates:
-- Path= /customers/**
-- id: r2
-uri: http://localhost:8057
-predicates:
-- Path= /accounts/**
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: r1
+              uri: http://localhost:8056
+              predicates:
+                - Path=/customers/**
+            - id: r2
+              uri: http://localhost:8057
+              predicates:
+                - Path=/accounts/**
+```
 
+> Attention : en YAML, l'**indentation** est essentielle, et il ne faut pas d'espace dans `Path=/customers/**`.
 
-on passe au config de la gateway et ondesacive eureka pcq c pas encore cree
-et voila donc an tetsr 
-ca nmarche  http://localhost:9999/customers
+On passe ensuite à la configuration de la Gateway, et on **désactive Eureka** car le Discovery Service n'est pas encore créé :
+
+```properties
+spring.application.name=gateway-service
+server.port=9999
+eureka.client.enabled=false
+spring.cloud.config.enabled=false
+```
+
+Et voilà, on teste. Ça marche : <http://localhost:9999/customers>
+
 ![img_18.png](images/img_18.png)
 
+Et ça marche aussi : <http://localhost:9999/accounts>
 
-et aussi  ca marche : http://localhost:9999/accounts
- ![img_19.png](images/img_19.png)
+![img_19.png](images/img_19.png)
 
-ca sc rouage sttaiuqe onpasse acrrer notre discprvey service
-avec depndencies:
-eureka servcer,actuator
+---
+
+## 6. Discovery Service (Eureka Server)
+
+Ça, c'était le routage statique. On passe maintenant à la création de notre **Discovery Service**, avec les dépendances :
+
+* Eureka Server
+* Actuator
+
 ![img_20.png](images/img_20.png)
 
-avec port 8761
-spring.application.name=discovery-service
-server.port=8761
-on desacive donc fetch registry et register  car  sui on les active une fosi elle demarr eil vont cherche a senresgistetr et c pas utilsie
+### 6.1 Configuration (port 8761)
+
+```properties
 spring.application.name=discovery-service
 server.port=8761
 eureka.client.fetch-registry=false
 eureka.client.register-with-eureka=false
-on enbale eureka server sinn ca va pas marche
+```
+
+On désactive `fetch-registry` et `register-with-eureka` car, si on les active, le serveur Eureka va lui-même essayer de s'enregistrer (et de récupérer le registre) auprès d'un autre serveur Eureka, ce qui est inutile ici.
+
+### 6.2 Activation d'Eureka Server
+
+On active Eureka Server avec `@EnableEurekaServer`, sinon cela ne marche pas :
+
+```java
 package net.tayebi.discoveryservice;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.netflix.eureka.server.EnableEurekaServer;
@@ -603,37 +725,58 @@ import org.springframework.cloud.netflix.eureka.server.EnableEurekaServer;
 @EnableEurekaServer
 public class DiscoveryServiceApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(DiscoveryServiceApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(DiscoveryServiceApplication.class, args);
+    }
 }
+```
 
-on exec et c bn pur lurl ca marhce
-http://localhost:8761/
+On exécute : c'est bon, l'URL fonctionne : <http://localhost:8761/>
+
 ![img_21.png](images/img_21.png)
 
+### 6.3 Enregistrement des microservices
 
-pour le moememn aucun service  nes t uenregistre pour se faire on reveient a leur config et on  active discovery
-dan amain sicovery sevrice :
-avec
-spring.cloud.config.discovery.enabled=true // pour toruvr ma ip contac eureka
-eureka.client.enabled=true //je veux utilsier euraka pour snenrgeizter
+Pour le moment, **aucun service n'est enregistré**. Pour cela, on revient à la configuration de chaque microservice (Customer Service, eBank Service, Gateway) et on **active la découverte** :
 
+```properties
+eureka.client.enabled=true
+```
+
+* `eureka.client.enabled=true` : « je veux utiliser Eureka pour m'enregistrer et pour découvrir les autres services ».
+* `spring.cloud.config.discovery.enabled` concerne uniquement la recherche du **Config Service** via Eureka : on le laisse à `false` tant que le Config Service n'est pas créé.
 
 ![img_22.png](images/img_22.png)
 
-maintnenn on doi etablir un communictaion entre scutsem r svrice et bank via open feign  dans nore ebnak-service
-<dependency>
-<groupId>org.springframework.cloud</groupId>
-<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
-</dependency>
-pis on ajoute repo feign dna sebank service
-<dependency>
-<groupId>org.springframework.cloud</groupId>
-<artifactId>spring-cloud-starter-openfeign</artifactId>
-</dependency>
+---
 
+## 7. Communication Customer Service ↔ eBank Service via OpenFeign
+
+Maintenant, on doit établir une communication entre Customer Service et eBank Service via **OpenFeign**, dans notre **ebank-service**.
+
+### 7.1 Dépendances
+
+Eureka Client (pour la découverte) :
+
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+</dependency>
+```
+
+Puis on ajoute OpenFeign dans eBank Service :
+
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-openfeign</artifactId>
+</dependency>
+```
+
+### 7.2 Client Feign `CustomerRestClient`
+
+```java
 package net.tayebi.ebankservice.feign;
 
 import net.tayebi.ebankservice.model.Customer;
@@ -643,18 +786,23 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 @FeignClient(name = "customer-service")
 public interface CustomerRestClient {
-@GetMapping("/customers/{id}")
-public Customer getCustomer(@PathVariable int id) ;
-}
 
-ici envoi req avc id puis recucper le et le stcoke dans obj cusotmer cree et pur que ca amrhc efaut beosi  d config sys de routage de maniere dynamiqu n meemtnan app/yaml en comemnt et creer les anotaion
-via meth reactive dscovery cleint dans gateway
+    @GetMapping("/customers/{id}")
+    Customer getCustomer(@PathVariable Long id);
+}
+```
+
+Ici, on envoie une requête avec l'`id`, puis on récupère la réponse et on la stocke dans l'objet `Customer` créé côté eBank Service.
+
+### 7.3 Routage dynamique dans la Gateway
+
+Pour que cela marche, on a besoin de configurer le **système de routage de manière dynamique** : on met la configuration statique du fichier `application.yml` **en commentaire**, puis on crée le bean via la méthode `ReactiveDiscoveryClient` dans la Gateway :
+
+```java
 package net.tayebi.gatewayservice;
 
-import com.netflix.discovery.DiscoveryClient;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.web.server.autoconfigure.ServerProperties;
 import org.springframework.cloud.client.discovery.ReactiveDiscoveryClient;
 import org.springframework.cloud.gateway.discovery.DiscoveryClientRouteDefinitionLocator;
 import org.springframework.cloud.gateway.discovery.DiscoveryLocatorProperties;
@@ -663,36 +811,56 @@ import org.springframework.context.annotation.Bean;
 @SpringBootApplication
 public class GatewayServiceApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(GatewayServiceApplication.class, args);
-	}
-	@Bean
-	DiscoveryClientRouteDefinitionLocator routes(ReactiveDiscoveryClient rdc, DiscoveryLocatorProperties dlp) {
-		return new DiscoveryClientRouteDefinitionLocator(rdc, dlp);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(GatewayServiceApplication.class, args);
+    }
 
+    @Bean
+    DiscoveryClientRouteDefinitionLocator routes(ReactiveDiscoveryClient rdc, DiscoveryLocatorProperties dlp) {
+        return new DiscoveryClientRouteDefinitionLocator(rdc, dlp);
+    }
 }
- et on redemmarre
-geatweay et donc si on met ca va marhce http://localhost:9999/accounts 
+```
+
+Et on redémarre la Gateway. Désormais, <http://localhost:9999/accounts> ne fonctionne plus :
+
 ![img_23.png](images/img_23.png)
-on doit metr enom de sevcie commeca avec nom servcie majuscul acr defau  cenrgsier dna sdiscoveyr en majuscule
-http://localhost:9999/EBANK-SERVICE/accounts
-et camache
+
+Il faut maintenant utiliser le **nom du service** dans l'URL. Par défaut, les services s'enregistrent dans Discovery **en majuscules**, d'où :
+
+<http://localhost:9999/EBANK-SERVICE/accounts>
+
+Et ça marche :
+
 ![img_24.png](images/img_24.png)
 
-http://localhost:9999/CUSTOMER-SERVICE/customers
+<http://localhost:9999/CUSTOMER-SERVICE/customers>
+
 ![img_25.png](images/img_25.png)
-on va au sevrie de ebnak et on essya ede recucu e customer vai noe res client mehods
-pour que je peux ajouer bean objr dan smon sevic eje dois fair e
+
+> Astuce : avec `spring.cloud.gateway.discovery.locator.lower-case-service-id=true` (ou la propriété équivalente `...server.webflux.discovery.locator...` selon la version), on peut utiliser les noms en minuscules.
+
+### 7.4 Utilisation du client Feign dans eBank Service
+
+On va dans eBank Service et on essaie de récupérer un customer via les méthodes du client REST.
+
+Pour pouvoir **injecter** le client Feign comme un bean dans notre service, on doit ajouter `@EnableFeignClients` dans la classe principale :
+
+```java
+@SpringBootApplication
 @EnableFeignClients
-dans main puis je peux fiar
+public class EbankServiceApplication { ... }
+```
+
+`@EnableFeignClients` permet l'**injection** des clients Feign. Ensuite, on modifie le service :
+
+```java
 package net.tayebi.ebankservice.services;
 
 import lombok.AllArgsConstructor;
 import net.tayebi.ebankservice.entities.BankAccount;
 import net.tayebi.ebankservice.feign.CustomerRestClient;
 import net.tayebi.ebankservice.repositories.BankAccountRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -701,52 +869,76 @@ import java.util.UUID;
 
 @Service
 @AllArgsConstructor
-
 public class BankAccountService {
 
     private BankAccountRepository accountRepository;
     private CustomerRestClient customerRestClient;
 
-    public List<BankAccount> getAllBankAccounts(){
+    public List<BankAccount> getAllBankAccounts() {
         return accountRepository.findAll();
     }
 
-    public BankAccount getBankAccountById(String id){
-            BankAccount bankAccount= accountRepository.findById(id)
-                    .orElseThrow(()->new RuntimeException("Account not found"));
-            bankAccount.setCustomer(customerRestClient.getCustomer(bankAccount.getCustomerId()));
+    public BankAccount getBankAccountById(String id) {
+        BankAccount bankAccount = accountRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+        bankAccount.setCustomer(customerRestClient.getCustomer(bankAccount.getCustomerId()));
         return bankAccount;
     }
 
-    public BankAccount save(BankAccount bankAccount){
-                bankAccount.setId(UUID.randomUUID().toString());
-                bankAccount.setCreatedAt(new Date());
-                return accountRepository.save(bankAccount);
+    public BankAccount save(BankAccount bankAccount) {
+        bankAccount.setId(UUID.randomUUID().toString());
+        bankAccount.setCreatedAt(new Date());
+        return accountRepository.save(bankAccount);
     }
 }
+```
 
-on test ebank open feign cerre un clien  rets de mnaier edecalraive
-enable feign cleint c pour auoiser linjceion dna ses client
-c bon ca mrcenbien http://localhost:9999/EBANK-SERVICE/accounts/63123a42-365a-4616-9684-6ba57e741a8c
+On teste OpenFeign : on a créé un client REST de manière **déclarative**. Ça marche bien :
+
+<http://localhost:9999/EBANK-SERVICE/accounts/63123a42-365a-4616-9684-6ba57e741a8c>
+
 ![img_26.png](images/img_26.png)
-la on a co mpte avec ebank servcie  avec info de customer a laide de cusomer sevrce
-la on apsse a on peut peas enrgster un acocut  si aps de iuser cusomer
-public BankAccount save(BankAccount bankAccount){
-try {
-Customer customer = customerRestClient.getCustomer(bankAccount.getCustomerId());
-bankAccount.setId(UUID.randomUUID().toString());
-bankAccount.setCreatedAt(new Date());
-return accountRepository.save(bankAccount);
 
-        } catch (RuntimeException e) {
-            throw new RuntimeException(e.getMessage());
-        }
-    }
+Là, on a le compte avec eBank Service, **avec les informations du customer** obtenues à l'aide de Customer Service.
+
+### 7.5 Règle d'intégrité référentielle
+
+On ne doit **pas pouvoir enregistrer un compte si le customer n'existe pas**. Il revient à nous de gérer les règles d'intégrité référentielle :
+
+```java
+public BankAccount save(BankAccount bankAccount) {
+    // Vérifie que le customer existe (lève une exception sinon)
+    Customer customer = customerRestClient.getCustomer(bankAccount.getCustomerId());
+    bankAccount.setId(UUID.randomUUID().toString());
+    bankAccount.setCreatedAt(new Date());
+    return accountRepository.save(bankAccount);
 }
-c a nosu de gere les rreles dintegerite refrernetiel
-la on va utilsie ror four tlerance rsilence 4 j pour resoudre prob tolerance au panne
-on ejoute dep resilen 4 j et ciruit breaker pour que si srvice n ps dispo 
-on ajoute circuit breaker pour les meth qui peuvtne genrer des excpetion pour le diirger vrs defiual  meth for exmple
+```
+
+> Remarque : avec le circuit breaker de la section suivante, la méthode de repli renvoie un customer « par défaut » ; la vérification ne lèvera donc plus d'exception si Customer Service est arrêté. Pour une vraie règle d'intégrité, il faudrait par exemple tester `customer.getName()` ≠ `"Default name"` ou ne pas appliquer de fallback sur la création.
+
+---
+
+## 8. Tolérance aux pannes avec Resilience4j (Circuit Breaker)
+
+On utilise **Resilience4j** pour résoudre le problème de **tolérance aux pannes**.
+
+On ajoute les dépendances **Resilience4j** et **Circuit Breaker** pour que, si un service n'est pas disponible, l'application ne plante pas :
+
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-aop</artifactId>
+</dependency>
+```
+
+On ajoute `@CircuitBreaker` sur les méthodes qui peuvent générer des exceptions, afin de les **rediriger vers une méthode par défaut** (fallback) :
+
+```java
 package net.tayebi.ebankservice.feign;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -756,24 +948,60 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 @FeignClient(name = "customer-service")
-
 public interface CustomerRestClient {
-@GetMapping("/customers/{id}")
-@CircuitBreaker(name = "customer-service",fallbackMethod = "defaultCustomerMethod")
-public Customer getCustomer(@PathVariable long id) ;
-default  Customer defaultCustomerMethod(Exception e, Long id) {
-return new Customer(id,"Default name","default@gmail.com");
 
+    @GetMapping("/customers/{id}")
+    @CircuitBreaker(name = "customer-service", fallbackMethod = "defaultCustomerMethod")
+    Customer getCustomer(@PathVariable Long id);
+
+    default Customer defaultCustomerMethod(Long id, Exception e) {
+        return new Customer(id, "Default name", "default@gmail.com");
     }
 }
+```
 
-on teste par arreter couomr servcie pour voir ce uqil va afiche 
+> Points de cohérence : le type du paramètre `id` doit être **le même** (`Long`) dans la méthode et dans le fallback, et la méthode de repli doit avoir la même signature + un paramètre `Exception` (en dernier).
+
+**Test :** on arrête Customer Service pour voir ce qui s'affiche.
+
 ![img_27.png](images/img_27.png)
- la on defaults car servcie cutomer arrete
-on le realumeet a macreh
+
+Là, on obtient les **valeurs par défaut**, car le service Customer est arrêté.
+
+On le relance, et tout refonctionne normalement :
+
 ![img_28.png](images/img_28.png)
-PARTIE 2:ON PASSE A LA CREATION DU CHATBOT  AVEC MCP
 
-PARIE3;ET FROBTEND ANGULAR AVC CLIENT TLEGRAM
+---
 
-APRES SECURITE AVEC KEKLCOCK ETC
+## 9. Prochaines étapes
+
+* Config Service (configuration centralisée).
+* Frontend Angular.
+* eBank Chatbot Service avec Spring AI, MCP (Streamable HTTP) et un LLM.
+* Intégration de Telegram.
+
+---
+
+## 10. Récapitulatif des corrections apportées
+
+| # | Endroit | Erreur dans la version d'origine | Correction |
+|---|---|---|---|
+| 1 | `CustomerRepository`, `CustomerRestController` | Imports inutiles (`Entity`, `Id`, `GeneratedValue`, `lombok.*`, `CustomerRepository`) | Imports supprimés |
+| 2 | `application.properties` (Customer) | `spring.application.name` en double | Une seule occurrence |
+| 3 | `BankAccount` | Annotation `@Entity` **manquante** (JPA ne la persistait pas) | Ajout de `@Entity` |
+| 4 | `BankAccount` | `@Builder` manquant alors que `BankAccount.builder()` est utilisé | Ajout de `@Builder` |
+| 5 | `BankAccount.customerId` | Type `long` alors que `Customer.id` est `Long` | Uniformisé en `Long` |
+| 6 | `CommandLineRunner` (eBank) | Accolade fermante manquante (code qui ne compile pas) et espace avant `.type (` | Accolades corrigées |
+| 7 | `CommandLineRunner` (eBank) | Valeurs incohérentes `"CURRENT-ACCOUNT"` / `"SAVING_ACCOUNT"` | `CURRENT_ACCOUNT` / `SAVING_ACCOUNT` |
+| 8 | `application.properties` (eBank) | `spring.cloud.discovery.enabled` (propriété inexistante) | `spring.cloud.config.discovery.enabled` |
+| 9 | `application.properties` (eBank) | Pas d'URL de datasource explicite | Ajout de `spring.datasource.url=jdbc:h2:mem:accounts-db` |
+| 10 | YAML de la Gateway | Indentation cassée, espaces dans `Path= /customers/**` | YAML valide et `Path=/customers/**` |
+| 11 | `GatewayServiceApplication` | Imports erronés/inutiles (`com.netflix.discovery.DiscoveryClient`, `ServerProperties`) | Supprimés |
+| 12 | Config de découverte | Commentaires `//` dans un `.properties` (invalide) et rôle de `spring.cloud.config.discovery.enabled` mal décrit | Explications déplacées dans le texte ; seul `eureka.client.enabled=true` sert à l'enregistrement |
+| 13 | `CustomerRestClient` | `@PathVariable int id` puis `long id` (types incohérents avec `Long`) | `@PathVariable Long id` partout |
+| 14 | Fallback Resilience4j | Signature `(Exception e, Long id)` incompatible avec `long id` ; ordre des paramètres inversé | Signature `(Long id, Exception e)` cohérente avec la méthode |
+| 15 | Dépendances Resilience4j | Dépendances non précisées | Ajout de `spring-cloud-starter-circuitbreaker-resilience4j` et `spring-boot-starter-aop` |
+| 16 | `BankAccountService.save` | `try/catch` qui relance la même exception (inutile) et variable `customer` non utilisée | Simplifié, avec remarque sur l'interaction avec le fallback |
+| 17 | `@EnableFeignClients` | Mentionné mais absent du code | Ajouté dans la classe principale d'eBank Service |
+| 18 | Orthographe / formulation | Nombreuses fautes de frappe (« rouage », « sevrice », « cre »…) | Texte reformulé et corrigé |
